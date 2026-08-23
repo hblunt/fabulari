@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+tmp/
+out-tsc/
+
+# Angular CLI cache
+.angular/cache/
+
+# Environment / secrets — keep local overrides out of git
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor folders
+.idea/
+.vscode/
+*.swp
+*~
