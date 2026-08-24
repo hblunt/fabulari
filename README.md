@@ -1,8 +1,8 @@
 # Fabulari
 
-**Student:** [Your Name] — [sNumber]  
-**Workshop:** [Day / time / campus or online]  
-**GitHub:** [repository URL]
+**Student:** Holly Blunt — s5394008 
+**Workshop:** Online Friday
+**GitHub:** https://github.com/hblunt/fabulari
 
 A full-stack chat application for Griffith University 3813ICT Full Stack Development. Users sign in, belong to groups, and talk in channels. Three permission levels (Super Admin, Group Admin, Chat User) control who can manage users, groups, and channels.
 
