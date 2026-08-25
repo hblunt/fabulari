@@ -1163,3 +1163,53 @@ Content-Type: application/json
   }
 }
 ```
+
+## 7. Design Documents
+
+### Design principles
+
+**One shell, role-aware navigation.** Every signed-in view uses the same shell.
+Role changes which destinations appear, not where anything sits.
+
+**Semantic colour tokens.** Colour is expressed through spartan/ui's tokens
+(`background`, `foreground`, `primary`, `muted`, `border`, `ring`). Group themes
+are preset palettes that redefine those tokens, so a theme change propagates
+without any component knowing about themes. Presets rather than free colour
+selection guarantee contrast.
+
+**Administrative controls sit in context.** A group admin edits a group from the
+group's own page, not a separate administration area.
+
+**Accessibility.** spartan/ui supplies keyboard navigation, focus management and
+ARIA attributes. Colour is never the only carrier of meaning: admin status,
+message ownership and request state each have a text or icon indicator.
+
+**Restricted scale.** Four type sizes, a subset of Tailwind's spacing scale, and
+one corner radius set in the theme configuration. Repeated values produce
+consistency without a judgement call on every element.
+
+### Responsive strategy
+
+The application targets **desktop and tablet**. Mobile support was ruled out by
+the client, so the layout is designed desktop-first and adapts down.
+
+Tailwind's default breakpoints are used unchanged:
+
+| Breakpoint | Width | Layout |
+|---|---|---|
+| `md` | ≥ 768px | Tablet. Two regions; supporting panels become toggles |
+| `lg` | ≥ 1024px | Desktop. Three regions, all panels visible |
+| `xl` | ≥ 1280px | Content width capped, additional gutter |
+
+Below 768px the layout holds at its tablet arrangement.
+
+| Region | Desktop | Tablet |
+|---|---|---|
+| Navigation | Persistent sidebar | Collapsed to header menu |
+| Room view | Room list, messages, presence panel | Messages fill width; list and presence become overlays |
+| Group detail | Rooms and members side by side | Stacked, rooms first |
+| Request queue | Table with inline actions | Cards with actions beneath |
+
+The principle throughout: **supporting content collapses, primary content keeps
+its space.** Layout uses Tailwind breakpoint prefixes on the elements being
+changed, so no custom media queries are needed.
