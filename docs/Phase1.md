@@ -1213,3 +1213,66 @@ Below 768px the layout holds at its tablet arrangement.
 The principle throughout: **supporting content collapses, primary content keeps
 its space.** Layout uses Tailwind breakpoint prefixes on the elements being
 changed, so no custom media queries are needed.
+
+### Storyboard flow
+
+Design documents were produced before implementation began and live in
+[`docs/storyboards/`](docs/storyboards), as PNG for viewing and SVG for editing.
+The map sequences every frame; numbers match the filenames.
+
+***See docs/storyboards/fabulari_storyboard_flow.svg***
+
+*Frames
+05 and 06 are the same route. A member who administers the group sees the admin
+controls appear in place, which is the single-shell principle in practice. No
+path leads from the super admin branch into a group or room.
+
+### Frames
+
+| # | Frame | Shows |
+|---|---|---|
+| 01 | [Login](docs/storyboards/wf-01-login.png) | Email and password only. No username, no recovery. |
+| 02 | [Register](docs/storyboards/wf-02-register.png) | Self-registration with self-reported age and password rules stated up front. |
+| 03 | [Bootstrap](docs/storyboards/wf-03-bootstrap.png) | First-run onboarding, reachable only while no users exist. |
+| 04 | [Group browse](docs/storyboards/wf-04-group-browse.png) | Four join states: member, joinable, requested, blocked by age limit. |
+| 05 | [Group detail, member](docs/storyboards/wf-05-group-detail-member.png) | Rooms and full membership. Group membership grants access to every room. |
+| 06 | [Group detail, admin](docs/storyboards/wf-06-group-detail-admin.png) | Same route as 05 with admin controls. Editing is direct; deletion is a request. |
+| 07 | [Room, desktop](docs/storyboards/wf-07-room-desktop.png) | Three regions: room list, message stream, in-room presence. |
+| 08 | [Room, tablet](docs/storyboards/wf-08-room-tablet.png) | The same screen at 768px. |
+| 09 | [My requests](docs/storyboards/wf-09-my-requests.png) | All request types in one filterable view, with rejection reasons in place. |
+| 10 | [Request queue](docs/storyboards/wf-10-request-queue.png) | Join, room and report requests for the groups an admin runs. |
+| 11 | [Profile](docs/storyboards/wf-11-profile.png) | Editable details, read-only email, password change, picture upload. |
+| 12 | [Super admin requests](docs/storyboards/wf-12-admin-requests.png) | Group creation, deletion and system bans. Same component as 10. |
+| 13 | [User administration](docs/storyboards/wf-13-admin-users.png) | Every account. Deletion blocked while a user is the sole admin of a group. |
+| 14 | [Banned accounts](docs/storyboards/wf-14-banned-accounts.png) | Tombstone records retaining the email so it cannot be reused. |
+| 15 | [Audit log](docs/storyboards/wf-15-audit-log.png) | Administrative actions, filterable by type and date. |
+| 16 | [Dialogs](docs/storyboards/wf-16-dialogs.png) | Four shapes sharing one shell: form, reason, confirm, consequence. |
+
+Each frame carries numbered callouts tying an interface element back to the
+requirement that produced it. These are documentation, not part of the built
+interface.
+
+Frames 07 and 08 are the responsive pair: three regions at desktop, one at
+tablet, with the room list and presence panel becoming toggles while the message
+stream keeps its width.
+
+***See docs/storyboards/wf-07-room-desktop.png and wf-08-room-tablet.png***
+
+### Request lifecycle
+
+Almost every administrative action begins as a request. The six types differ
+only in who submits them, who actions them, and what approval creates.
+
+***See docs/storyboards/fabulari_request_lifecycle.svg***
+
+| Type | Submitted by | Actioned by | Approval creates |
+|---|---|---|---|
+| `GROUP_CREATE` | Any user | Super admin | Group, with the submitter as first admin |
+| `GROUP_DELETE` | Group admin | Super admin | Deletion of the group and its rooms |
+| `GROUP_JOIN` | Any user | Group admin | Group membership |
+| `ROOM_CREATE` | Group member | Group admin | Room within the group |
+| `USER_REPORT` | Group member | Group admin | Permission to ban from the group |
+| `SYSTEM_BAN` | Group admin | Super admin | Permission to delete the account |
+
+An administrator cannot action a request they submitted themselves, requests
+cannot be withdrawn, and every rejection carries a reason shown to the submitter.
