@@ -1,6 +1,7 @@
 // client/src/app/core/services/group-service.ts
-// The two GETs from Stage 2, plus edit and delete for Stage 3.
-// Groups are still never created here — that stays a request approval.
+// Group HTTP (Phase1.md §6). Groups are never created here — that stays a
+// request approval. Membership writes both group.members and user.groups
+// on the server.
 
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
@@ -31,8 +32,33 @@ export class GroupService {
     return this.http.patch<{ group: Group; removedMembers: User[] }>(`/api/groups/${id}`, body);
   }
 
-  // Super admin only. Requires an approved GROUP_DELETE for this group.
   delete(id: string, requestId: string): Observable<void> {
     return this.http.delete<void>(`/api/groups/${id}`, { body: { requestId } });
+  }
+
+  members(id: string): Observable<User[]> {
+    return this.http.get<{ members: User[] }>(`/api/groups/${id}/members`).pipe(map((res) => res.members));
+  }
+
+  removeMember(groupId: string, userId: string): Observable<void> {
+    return this.http.delete<void>(`/api/groups/${groupId}/members/${userId}`);
+  }
+
+  promote(groupId: string, userId: string): Observable<void> {
+    return this.http.post<void>(`/api/groups/${groupId}/admins/${userId}`, {});
+  }
+
+  demote(groupId: string, userId: string): Observable<void> {
+    return this.http.delete<void>(`/api/groups/${groupId}/admins/${userId}`);
+  }
+
+  bans(id: string): Observable<User[]> {
+    return this.http
+      .get<{ bannedUsers: User[] }>(`/api/groups/${id}/bans`)
+      .pipe(map((res) => res.bannedUsers));
+  }
+
+  ban(groupId: string, userId: string, requestId: string): Observable<void> {
+    return this.http.post<void>(`/api/groups/${groupId}/bans/${userId}`, { requestId });
   }
 }

@@ -3,7 +3,7 @@
 // scopes the rows, and `groupId` embeds it on a group page vs the super
 // admin route.
 
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { take } from 'rxjs';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmDialogService } from '@spartan-ng/helm/dialog';
@@ -43,7 +43,10 @@ const ADMIN_CHIPS: Chip[] = [
   template: `
     <section [class]="groupId() ? '' : 'mx-auto max-w-6xl px-4 py-8'">
       @if (groupId()) {
-        <h2 class="text-xl font-semibold">Pending requests</h2>
+        <h2 class="text-xl font-semibold">
+          Pending requests
+          <span class="text-base font-normal text-muted-foreground">{{ visible().length }}</span>
+        </h2>
       } @else {
         <h1 class="text-2xl font-semibold">Pending requests</h1>
       }
@@ -98,6 +101,10 @@ export class RequestQueue {
 
   readonly groupId = input<string | null>(null);
   readonly groupTitle = input('');
+  // Parent bumps this after a local submit (propose room, report) so the
+  // queue refetches — groupId itself has not changed.
+  readonly reloadToken = input(0);
+  readonly approved = output<AppRequest>();
 
   protected readonly filter = signal<RequestType | 'ALL'>('ALL');
   protected readonly rows = signal<AppRequest[]>([]);
@@ -126,25 +133,15 @@ export class RequestQueue {
   constructor() {
     effect(() => {
       this.groupId();
+      this.reloadToken();
       untracked(() => this.reload());
     });
   }
 
   protected onApprove(request: AppRequest): void {
-    if (request.type === 'GROUP_DELETE' || request.type === 'SYSTEM_BAN') {
-      const ctx: ConfirmDialogContext =
-        request.type === 'GROUP_DELETE'
-          ? {
-              title: `Delete ${request.targetName}?`,
-              subtitle: 'The group and its rooms are removed immediately. This cannot be undone.',
-              confirmLabel: 'Delete group',
-            }
-          : {
-              title: `Approve system ban of ${request.targetName}?`,
-              subtitle: 'This grants permission to delete the account. Deletion happens from the Users page.',
-              notice: 'The email can never be registered again after deletion.',
-              confirmLabel: 'Approve',
-            };
+    if (request.type === 'GROUP_DELETE' || request.type === 'SYSTEM_BAN' || request.type === 'USER_REPORT') {
+      const ctx = this.confirmContext(request);
+      if (!ctx) return;
       const ref = this.dialog.open<boolean, ConfirmDialogContext>(ConfirmDialog, { context: ctx });
       ref.closed$.pipe(take(1)).subscribe((ok) => {
         if (ok) this.approve(request);
@@ -152,6 +149,32 @@ export class RequestQueue {
       return;
     }
     this.approve(request);
+  }
+
+  private confirmContext(request: AppRequest): ConfirmDialogContext | null {
+    if (request.type === 'GROUP_DELETE') {
+      return {
+        title: `Delete ${request.targetName}?`,
+        subtitle: 'The group and its rooms are removed immediately. This cannot be undone.',
+        confirmLabel: 'Delete group',
+      };
+    }
+    if (request.type === 'SYSTEM_BAN') {
+      return {
+        title: `Approve system ban of ${request.targetName}?`,
+        subtitle: 'This grants permission to delete the account. Deletion happens from the Users page.',
+        notice: 'The email can never be registered again after deletion.',
+        confirmLabel: 'Approve',
+      };
+    }
+    // USER_REPORT: confirm the ban before approve, so cancel leaves the
+    // report pending (approve only grants permission; POST /bans does it).
+    return {
+      title: `Ban ${request.targetName} from this group?`,
+      subtitle: 'They lose access to the group and all of its rooms immediately. This cannot be undone.',
+      notice: `Their account and other group memberships are unaffected. Acting on report from ${request.submitterName}.`,
+      confirmLabel: 'Ban member',
+    };
   }
 
   protected onReject(request: AppRequest): void {
@@ -187,20 +210,33 @@ export class RequestQueue {
         // by DELETE /api/groups/:id so the cascade lives in one place.
         if (request.type === 'GROUP_DELETE' && request.targetId) {
           this.groupsApi.delete(request.targetId, request.id).subscribe({
-            next: () => this.finishApprove(),
+            next: () => this.finishApprove(request),
             error: (err) => this.failApprove(err),
           });
           return;
         }
-        this.finishApprove();
+        if (request.type === 'USER_REPORT' && request.targetId) {
+          const groupId = this.groupId() ?? request.groupId;
+          if (!groupId) {
+            this.failApprove({ error: { error: 'Could not ban this member.' } });
+            return;
+          }
+          this.groupsApi.ban(groupId, request.targetId, request.id).subscribe({
+            next: () => this.finishApprove(request),
+            error: (err) => this.failApprove(err),
+          });
+          return;
+        }
+        this.finishApprove(request);
       },
       error: (err) => this.failApprove(err),
     });
   }
 
-  private finishApprove(): void {
+  private finishApprove(request: AppRequest): void {
     this.busyId.set(null);
-    this.notify.success('Request approved.');
+    this.notify.success(request.type === 'USER_REPORT' ? 'Member banned.' : 'Request approved.');
+    this.approved.emit(request);
     this.reload();
   }
 

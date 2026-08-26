@@ -77,6 +77,14 @@ export class AuthService {
     this.setSession({ ...user, groups: [...user.groups, groupId] });
   }
 
+  // Leave (or being removed) must drop the id too, or the guard still
+  // thinks we belong and the next visit 403s after a stale Open click.
+  forgetGroup(groupId: string): void {
+    const user = this.currentUser();
+    if (!user || !user.groups.includes(groupId)) return;
+    this.setSession({ ...user, groups: user.groups.filter((id) => id !== groupId) });
+  }
+
   private setSession(user: SessionUser): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
     this.currentUser.set(user);
