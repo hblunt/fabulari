@@ -85,6 +85,12 @@ export class AuthService {
     this.setSession({ ...user, groups: user.groups.filter((id) => id !== groupId) });
   }
 
+  // Profile PATCH can change the name shown in the shell. Age stays off
+  // SessionUser so this only copies the identity fields login already stores.
+  applyUser(user: User): void {
+    this.setSession(toSessionUser(user));
+  }
+
   private setSession(user: SessionUser): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
     this.currentUser.set(user);
