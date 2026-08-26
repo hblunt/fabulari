@@ -972,8 +972,10 @@ and returns only public fields: title, description, age limit and member count.
 Raising `ageLimit` removes members who now fall below it; the response reports
 which users were removed so the client can confirm the effect. There is no
 `POST /api/groups` — groups are only created by approving a `GROUP_CREATE`
-request. Deletion requires an approved `GROUP_DELETE` request and cascades to
-the group's rooms, messages and outstanding requests.
+request. Deletion requires an approved `GROUP_DELETE` request: approval
+permits the deletion, and `DELETE /api/groups/:id` performs it, cascading
+to the group's rooms, messages and outstanding requests. This is the same
+split as `SYSTEM_BAN` and `DELETE /api/users/:id`.
 
 ### Group membership
 
@@ -1037,7 +1039,7 @@ entity where one results:
 | Type | Approved by | Effect of approval |
 |---|---|---|
 | `GROUP_CREATE` | Super admin | Creates the group and makes the submitter its first admin |
-| `GROUP_DELETE` | Super admin | Deletes the group and cascades to its rooms and messages |
+| `GROUP_DELETE` | Super admin | Permits the group to be deleted |
 | `GROUP_JOIN` | Group admin | Adds the submitter to the group's members |
 | `ROOM_CREATE` | Group admin | Creates the room within the group |
 | `USER_REPORT` | Group admin | Permits the reported user to be banned from the group |
@@ -1268,7 +1270,7 @@ only in who submits them, who actions them, and what approval creates.
 | Type | Submitted by | Actioned by | Approval creates |
 |---|---|---|---|
 | `GROUP_CREATE` | Any user | Super admin | Group, with the submitter as first admin |
-| `GROUP_DELETE` | Group admin | Super admin | Deletion of the group and its rooms |
+| `GROUP_DELETE` | Group admin | Super admin | Permission to delete the group and its rooms |
 | `GROUP_JOIN` | Any user | Group admin | Group membership |
 | `ROOM_CREATE` | Group member | Group admin | Room within the group |
 | `USER_REPORT` | Group member | Group admin | Permission to ban from the group |

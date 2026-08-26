@@ -9,6 +9,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmDialogService } from '@spartan-ng/helm/dialog';
 import type { AppRequest, RequestType } from '../../core/models';
 import { AuthService } from '../../core/services/auth-service';
+import { GroupService } from '../../core/services/group-service';
 import { NotificationService } from '../../core/services/notification-service';
 import { RequestService } from '../../core/services/request-service';
 import { ConfirmDialog, type ConfirmDialogContext } from './confirm-dialog';
@@ -90,6 +91,7 @@ const ADMIN_CHIPS: Chip[] = [
 })
 export class RequestQueue {
   private readonly requests = inject(RequestService);
+  private readonly groupsApi = inject(GroupService);
   private readonly auth = inject(AuthService);
   private readonly notify = inject(NotificationService);
   private readonly dialog = inject(HlmDialogService);
@@ -181,15 +183,30 @@ export class RequestQueue {
     this.busyId.set(request.id);
     this.requests.approve(request.id).subscribe({
       next: () => {
-        this.busyId.set(null);
-        this.notify.success('Request approved.');
-        this.reload();
+        // GROUP_DELETE approval only grants permission; the group is removed
+        // by DELETE /api/groups/:id so the cascade lives in one place.
+        if (request.type === 'GROUP_DELETE' && request.targetId) {
+          this.groupsApi.delete(request.targetId, request.id).subscribe({
+            next: () => this.finishApprove(),
+            error: (err) => this.failApprove(err),
+          });
+          return;
+        }
+        this.finishApprove();
       },
-      error: (err) => {
-        this.busyId.set(null);
-        this.notify.error(err.error?.error ?? 'Could not approve this request.');
-      },
+      error: (err) => this.failApprove(err),
     });
+  }
+
+  private finishApprove(): void {
+    this.busyId.set(null);
+    this.notify.success('Request approved.');
+    this.reload();
+  }
+
+  private failApprove(err: { error?: { error?: string } }): void {
+    this.busyId.set(null);
+    this.notify.error(err.error?.error ?? 'Could not approve this request.');
   }
 
   private reload(): void {
