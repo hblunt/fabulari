@@ -30,6 +30,25 @@ function publicSummary(user, group) {
   };
 }
 
+function publicUsersByIds(ids) {
+  return ids
+    .map((id) => db.users.find((u) => u.id === id))
+    .filter(Boolean)
+    .map(toPublicUser)
+    .sort((a, b) => a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName));
+}
+
+function removeFromGroup(group, userId) {
+  group.members = group.members.filter((id) => id !== userId);
+  group.admins = group.admins.filter((id) => id !== userId);
+  const user = db.users.find((u) => u.id === userId);
+  if (user) user.groups = user.groups.filter((id) => id !== group.id);
+}
+
+function wouldOrphanAdmins(group, userId) {
+  return group.admins.includes(userId) && group.admins.length === 1;
+}
+
 function parsePatch(body) {
   if (!body || typeof body !== "object") {
     return { status: 400, error: "No valid fields to update." };
@@ -79,16 +98,13 @@ function applyPatch(group, body) {
       .map((id) => db.users.find((u) => u.id === id))
       .filter((u) => u && u.age < patch.ageLimit);
 
-    // A group must always keep at least one admin (§3). Age-out cannot orphan it.
     const remainingAdmins = group.admins.filter((id) => !removed.some((u) => u.id === id));
     if (remainingAdmins.length === 0) {
       return { status: 409, error: "This change would leave the group with no admin." };
     }
 
     for (const user of removed) {
-      group.members = group.members.filter((id) => id !== user.id);
-      group.admins = group.admins.filter((id) => id !== user.id);
-      user.groups = user.groups.filter((id) => id !== group.id);
+      removeFromGroup(group, user.id);
     }
     save("users");
   }
@@ -98,7 +114,89 @@ function applyPatch(group, body) {
   return { group, removedMembers: removed.map(toPublicUser) };
 }
 
+function removeMember(group, actor, targetId) {
+  if (!group.members.includes(targetId)) {
+    return { status: 404, error: "User is not a member of this group." };
+  }
+  const isAdmin = group.admins.includes(actor.id);
+  const isSelf = actor.id === targetId;
+  if (!isAdmin && !isSelf) {
+    return { status: 403, error: "Group admin only, or leave as yourself." };
+  }
+  if (wouldOrphanAdmins(group, targetId)) {
+    return { status: 409, error: "This change would leave the group with no admin." };
+  }
+  removeFromGroup(group, targetId);
+  save("groups");
+  save("users");
+  return { ok: true };
+}
+
+function promote(group, targetId) {
+  if (!group.members.includes(targetId)) {
+    return { status: 404, error: "User is not a member of this group." };
+  }
+  if (group.admins.includes(targetId)) {
+    return { status: 409, error: "User is already an admin of this group." };
+  }
+  group.admins.push(targetId);
+  save("groups");
+  return { ok: true };
+}
+
+function demote(group, targetId) {
+  if (!group.admins.includes(targetId)) {
+    return { status: 404, error: "User is not an admin of this group." };
+  }
+  if (wouldOrphanAdmins(group, targetId)) {
+    return { status: 409, error: "This change would leave the group with no admin." };
+  }
+  group.admins = group.admins.filter((id) => id !== targetId);
+  save("groups");
+  return { ok: true };
+}
+
+function applyBan(group, actor, targetId, requestId) {
+  if (typeof requestId !== "string" || !requestId.trim()) {
+    return { status: 400, error: "An approved USER_REPORT requestId is required." };
+  }
+  const request = db.requests.find((r) => r.id === requestId.trim());
+  if (!request) return { status: 404, error: "Request not found." };
+  if (request.type !== "USER_REPORT") {
+    return { status: 400, error: "Request is not a user report." };
+  }
+  if (request.status !== "APPROVED") {
+    return { status: 409, error: "The report has not been approved." };
+  }
+  if (request.submittedBy === actor.id) {
+    return { status: 403, error: "You cannot act on a report you submitted." };
+  }
+  if (request.targetId !== targetId) {
+    return { status: 409, error: "This report does not target that user." };
+  }
+  if (request.payload?.groupId !== group.id) {
+    return { status: 409, error: "This report is not for this group." };
+  }
+  if (group.bannedUsers.includes(targetId)) {
+    return { status: 409, error: "User is already banned from this group." };
+  }
+  if (wouldOrphanAdmins(group, targetId)) {
+    return { status: 409, error: "This change would leave the group with no admin." };
+  }
+
+  removeFromGroup(group, targetId);
+  group.bannedUsers.push(targetId);
+  save("groups");
+  save("users");
+  return { ok: true, request };
+}
+
 module.exports = {
   publicSummary,
+  publicUsersByIds,
   applyPatch,
+  removeMember,
+  promote,
+  demote,
+  applyBan,
 };

@@ -1,18 +1,22 @@
 // server/routes/groups.js
-// Group list, detail, edit and delete (Phase1.md §6). There is no POST —
-// groups are created only by approving a GROUP_CREATE request.
+// Group list, detail, edit, delete, and membership (Phase1.md §6).
+// There is no POST on groups — creation is a GROUP_CREATE approval.
 
 const express = require("express");
 const { db } = require("../storage");
 const { fail } = require("../errors");
 const { writeAudit } = require("../audit");
-const {
-  requireAuth,
-  requireSuperAdmin,
-  requireGroupAdmin,
-} = require("../middleware");
+const { requireAuth, requireSuperAdmin, requireGroupAdmin } = require("../middleware");
 const { toPublicUser } = require("../users");
-const { publicSummary, applyPatch } = require("../groups");
+const {
+  publicSummary,
+  publicUsersByIds,
+  applyPatch,
+  removeMember,
+  promote,
+  demote,
+  applyBan,
+} = require("../groups");
 const { deleteGroupCascade, actorName } = require("../requests");
 
 const router = express.Router();
@@ -21,6 +25,47 @@ router.use(requireAuth);
 
 router.get("/", (req, res) => {
   res.json({ groups: db.groups.map((g) => publicSummary(req.user, g)) });
+});
+
+// Nested routes before /:id so "members" / "admins" / "bans" are not treated as IDs.
+router.get("/:id/members", requireGroupAdmin("id"), (req, res) => {
+  res.json({ members: publicUsersByIds(req.group.members) });
+});
+
+router.delete("/:id/members/:userId", (req, res) => {
+  const group = db.groups.find((g) => g.id === req.params.id);
+  if (!group) return fail(res, 404, "Group not found.");
+  const result = removeMember(group, req.user, req.params.userId);
+  if (result.error) return fail(res, result.status, result.error);
+  res.status(204).end();
+});
+
+router.post("/:id/admins/:userId", requireGroupAdmin("id"), (req, res) => {
+  const result = promote(req.group, req.params.userId);
+  if (result.error) return fail(res, result.status, result.error);
+  res.status(204).end();
+});
+
+router.delete("/:id/admins/:userId", requireGroupAdmin("id"), (req, res) => {
+  const result = demote(req.group, req.params.userId);
+  if (result.error) return fail(res, result.status, result.error);
+  res.status(204).end();
+});
+
+router.get("/:id/bans", requireGroupAdmin("id"), (req, res) => {
+  res.json({ bannedUsers: publicUsersByIds(req.group.bannedUsers) });
+});
+
+router.post("/:id/bans/:userId", requireGroupAdmin("id"), (req, res) => {
+  const result = applyBan(req.group, req.user, req.params.userId, req.body?.requestId);
+  if (result.error) return fail(res, result.status, result.error);
+  writeAudit(
+    req.user,
+    "GROUP_BAN",
+    `User: ${actorName(req.params.userId)}`,
+    `Banned from ${req.group.title}. Report ${result.request.id}.`
+  );
+  res.status(204).end();
 });
 
 router.get("/:id", (req, res) => {
