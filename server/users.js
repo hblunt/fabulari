@@ -1,7 +1,7 @@
 // server/users.js
-// User creation and validation shared by the two account-creation paths
-// (bootstrap and register, Phase1.md §6). Both must apply identical password
-// rules and hashing, so the logic lives once here rather than in each route.
+// User create, list and hard-delete (Phase1.md §6). Password hashing lives
+// here so bootstrap and register cannot drift. Deletion writes a tombstone
+// then cascades; GET /me is Stage 5.
 
 const bcrypt = require("bcrypt");
 const { db, save } = require("./storage");
@@ -78,10 +78,118 @@ function toPublicUser(user) {
   return publicUser;
 }
 
+function publicUsersByIds(ids) {
+  return ids
+    .map((id) => db.users.find((u) => u.id === id))
+    .filter(Boolean)
+    .map(toPublicUser);
+}
+
+function isSoleAdminAnywhere(userId) {
+  return db.groups.some((g) => g.admins.includes(userId) && g.admins.length === 1);
+}
+
+// Super admin sees everyone (optional groupId narrows). A group admin only
+// sees members of groups they administer — never the whole directory.
+function listVisibleUsers(actor, groupId) {
+  if (actor.role === "SUPER_ADMIN") {
+    if (!groupId) return { users: db.users.map(toPublicUser) };
+    const group = db.groups.find((g) => g.id === groupId);
+    if (!group) return { status: 404, error: "Group not found." };
+    return { users: publicUsersByIds(group.members) };
+  }
+
+  const administered = db.groups.filter((g) => g.admins.includes(actor.id));
+  if (administered.length === 0) {
+    return { status: 403, error: "Super admin or group admin only." };
+  }
+
+  if (groupId) {
+    const group = db.groups.find((g) => g.id === groupId);
+    if (!group) return { status: 404, error: "Group not found." };
+    if (!group.admins.includes(actor.id)) {
+      return { status: 403, error: "Group admin only." };
+    }
+    return { users: publicUsersByIds(group.members) };
+  }
+
+  const ids = [...new Set(administered.flatMap((g) => g.members))];
+  return { users: publicUsersByIds(ids) };
+}
+
+function requesterLabel(userId) {
+  const user = db.users.find((u) => u.id === userId);
+  return user ? `${user.firstName} ${user.lastName} (${user.email})` : userId;
+}
+
+// Hard-delete. The tombstone is written first so the email stays blacklisted
+// even if a later step fails. Pending requests they submitted or that name
+// them as the target are dropped; the approved SYSTEM_BAN is kept.
+function applyUserDelete(userId, requestId) {
+  if (typeof requestId !== "string" || !requestId.trim()) {
+    return { status: 400, error: "An approved SYSTEM_BAN requestId is required." };
+  }
+
+  const request = db.requests.find((r) => r.id === requestId.trim());
+  if (!request) return { status: 404, error: "Request not found." };
+  if (request.type !== "SYSTEM_BAN") {
+    return { status: 400, error: "Request is not a system ban." };
+  }
+  if (request.status !== "APPROVED") {
+    return { status: 409, error: "The ban request has not been approved." };
+  }
+  if (request.targetId !== userId) {
+    return { status: 409, error: "This request does not target that user." };
+  }
+
+  const user = db.users.find((u) => u.id === userId);
+  if (!user) return { status: 404, error: "User not found." };
+  if (user.role === "SUPER_ADMIN") {
+    return { status: 403, error: "The super admin cannot be deleted." };
+  }
+  if (isSoleAdminAnywhere(userId)) {
+    return { status: 409, error: "This user is the sole admin of a group." };
+  }
+
+  const tombstone = {
+    id: newId("bannedAccount"),
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    bannedAt: new Date().toISOString(),
+    reason: request.reason?.trim() || "No reason given.",
+    requestedBy: requesterLabel(request.submittedBy),
+  };
+  db.bannedAccounts.push(tombstone);
+  save("bannedAccounts");
+
+  for (const group of db.groups) {
+    group.members = group.members.filter((id) => id !== userId);
+    group.admins = group.admins.filter((id) => id !== userId);
+    group.bannedUsers = group.bannedUsers.filter((id) => id !== userId);
+  }
+  save("groups");
+
+  db.requests = db.requests.filter((r) => {
+    if (r.id === request.id) return true;
+    if (r.status !== "PENDING") return true;
+    return r.submittedBy !== userId && r.targetId !== userId;
+  });
+  save("requests");
+
+  const snapshot = { firstName: user.firstName, lastName: user.lastName, email: user.email };
+  db.users = db.users.filter((u) => u.id !== userId);
+  save("users");
+
+  return { ok: true, request, user: snapshot, tombstone };
+}
+
 module.exports = {
   validatePassword,
   validateNewUser,
   normaliseEmail,
   createUser,
   toPublicUser,
+  listVisibleUsers,
+  applyUserDelete,
 };
