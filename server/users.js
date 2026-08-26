@@ -1,7 +1,6 @@
 // server/users.js
-// User create, list and hard-delete (Phase1.md §6). Password hashing lives
-// here so bootstrap and register cannot drift. Deletion writes a tombstone
-// then cascades; GET /me is Stage 5.
+// User create, list, profile and hard-delete (Phase1.md §6). Password hashing
+// lives here so bootstrap, register and password-change cannot drift.
 
 const bcrypt = require("bcrypt");
 const { db, save } = require("./storage");
@@ -184,6 +183,58 @@ function applyUserDelete(userId, requestId) {
   return { ok: true, request, user: snapshot, tombstone };
 }
 
+function applyMePatch(user, body) {
+  if (!body || typeof body !== "object") {
+    return { status: 400, error: "No valid fields to update." };
+  }
+  if (Object.prototype.hasOwnProperty.call(body, "email")) {
+    return { status: 400, error: "Email cannot be changed." };
+  }
+
+  const patch = {};
+  if (body.firstName !== undefined) {
+    if (typeof body.firstName !== "string" || !body.firstName.trim()) {
+      return { status: 400, error: "First name is required." };
+    }
+    patch.firstName = body.firstName.trim();
+  }
+  if (body.lastName !== undefined) {
+    if (typeof body.lastName !== "string" || !body.lastName.trim()) {
+      return { status: 400, error: "Last name is required." };
+    }
+    patch.lastName = body.lastName.trim();
+  }
+  if (body.age !== undefined) {
+    if (typeof body.age !== "number" || !Number.isFinite(body.age) || body.age < 1) {
+      return { status: 400, error: "Age must be a positive number." };
+    }
+    patch.age = body.age;
+  }
+
+  if (Object.keys(patch).length === 0) {
+    return { status: 400, error: "No valid fields to update." };
+  }
+  Object.assign(user, patch);
+  save("users");
+  return { user };
+}
+
+function applyPasswordChange(user, body) {
+  const currentPassword = body?.currentPassword;
+  const newPassword = body?.newPassword;
+  if (typeof currentPassword !== "string" || typeof newPassword !== "string") {
+    return { status: 400, error: "Current password and new password are required." };
+  }
+  if (!bcrypt.compareSync(currentPassword, user.passwordHash)) {
+    return { status: 401, error: "Current password is incorrect." };
+  }
+  const problem = validatePassword(newPassword);
+  if (problem) return { status: 400, error: problem };
+  user.passwordHash = bcrypt.hashSync(newPassword, BCRYPT_ROUNDS);
+  save("users");
+  return { ok: true };
+}
+
 module.exports = {
   validatePassword,
   validateNewUser,
@@ -192,4 +243,6 @@ module.exports = {
   toPublicUser,
   listVisibleUsers,
   applyUserDelete,
+  applyMePatch,
+  applyPasswordChange,
 };

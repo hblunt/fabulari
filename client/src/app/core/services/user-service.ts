@@ -1,6 +1,6 @@
 // client/src/app/core/services/user-service.ts
-// Administrative user list, hard-delete and banned-account tombstones
-// (Phase1.md §6). Profile GET/PATCH /me is Stage 5.
+// Profile reads/updates, password change, the admin user list and deletion
+// (Phase1.md §5). Picture upload is Phase 2.
 
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
@@ -10,6 +10,18 @@ import type { BannedAccount, User } from '../models';
 @Injectable({ providedIn: 'root' })
 export class UserService {
   private readonly http = inject(HttpClient);
+
+  me(): Observable<User> {
+    return this.http.get<{ user: User }>('/api/users/me').pipe(map((res) => res.user));
+  }
+
+  patchMe(body: Partial<Pick<User, 'firstName' | 'lastName' | 'age'>>): Observable<User> {
+    return this.http.patch<{ user: User }>('/api/users/me', body).pipe(map((res) => res.user));
+  }
+
+  changePassword(currentPassword: string, newPassword: string): Observable<void> {
+    return this.http.patch<void>('/api/users/me/password', { currentPassword, newPassword });
+  }
 
   list(groupId?: string): Observable<User[]> {
     let params = new HttpParams();
