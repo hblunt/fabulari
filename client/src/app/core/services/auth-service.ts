@@ -68,6 +68,15 @@ export class AuthService {
     this.currentUser.set(null);
   }
 
+  // After someone else approves a join/create, browse knows we are a member
+  // but localStorage still has the old groups list. Patch it so the group
+  // detail guard does not bounce us back.
+  rememberGroup(groupId: string): void {
+    const user = this.currentUser();
+    if (!user || user.groups.includes(groupId)) return;
+    this.setSession({ ...user, groups: [...user.groups, groupId] });
+  }
+
   private setSession(user: SessionUser): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
     this.currentUser.set(user);

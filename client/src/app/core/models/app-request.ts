@@ -37,4 +37,14 @@ export interface AppRequest {
   actionedBy: string | null; // Administrator who approved or rejected.
   createdAt: string; // ISO date string.
   actionedAt: string | null; // ISO date string, null while pending.
+  // Display-only fields filled by GET/POST, not stored on disk.
+  submitterName?: string;
+  submitterAge?: number | null;
+  targetName?: string;
+  groupName?: string;
+  groupId?: string | null;
+  groupAgeLimit?: number | null;
+  memberCount?: number | null;
+  roomCount?: number | null;
+  wasBanned?: boolean;
 }

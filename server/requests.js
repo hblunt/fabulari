@@ -410,6 +410,7 @@ module.exports = {
   REQUEST_TYPES,
   STATUSES,
   GROUP_THEMES,
+  groupIdFor,
   canAction,
   canView,
   visibleRequests,
