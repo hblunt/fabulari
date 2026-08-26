@@ -1,0 +1,19 @@
+[
+  {
+    "id": "q-98f13708",
+    "type": "GROUP_CREATE",
+    "status": "PENDING",
+    "submittedBy": "u-6512bd43",
+    "targetId": null,
+    "payload": {
+      "title": "Board Games",
+      "description": "Tabletop gaming chat.",
+      "ageLimit": 12,
+      "theme": "moss"
+    },
+    "reason": null,
+    "actionedBy": null,
+    "createdAt": "2026-08-23T19:44:00.000Z",
+    "actionedAt": null
+  }
+]

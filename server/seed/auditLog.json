@@ -1,0 +1,11 @@
+[
+  {
+    "id": "a-b6d767d2",
+    "type": "SYSTEM_BAN_APPROVED",
+    "actorName": "System Administrator",
+    "actorEmail": "admin@example.com",
+    "targetLabel": "User: Sam Doyle (banned@example.com)",
+    "detail": "Ban requested by Holly Bennett.",
+    "timestamp": "2026-08-22T11:05:00.000Z"
+  }
+]
