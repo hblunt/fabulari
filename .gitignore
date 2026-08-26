@@ -9,6 +9,9 @@ out-tsc/
 # Angular CLI cache
 .angular/cache/
 
+# User-generated content, not source (server/data/*.json IS committed)
+server/uploads/
+
 # Environment / secrets — keep local overrides out of git
 .env
 .env.*

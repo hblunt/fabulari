@@ -1,0 +1,16 @@
+[
+  {
+    "id": "r-70efdf2e",
+    "groupId": "g-c9f0f895",
+    "name": "new-releases",
+    "description": "Films currently in cinemas.",
+    "createdAt": "2026-08-21T08:30:00.000Z"
+  },
+  {
+    "id": "r-6f4922f4",
+    "groupId": "g-c9f0f895",
+    "name": "classics",
+    "description": "Anything released before 2000.",
+    "createdAt": "2026-08-21T16:20:00.000Z"
+  }
+]

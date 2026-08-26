@@ -1,9 +1,16 @@
 // server/server.js
-// Phase 1 API only: CORS for the Angular origin, JSON bodies, and a health check.
-// User management and JSON-file persistence will be added later; MongoDB/sockets in Phase 2.
+// Express entry point. Stage 0 wires the foundations — storage, caller
+// identification and the health check. Feature routes arrive per stage
+// (auth in Stage 1, requests in Stage 2, ...). MongoDB/sockets are Phase 2.
 
 const express = require("express");
 const cors = require("cors");
+const { load } = require("./storage");
+const { identifyUser } = require("./middleware");
+
+// Read every JSON collection into memory before accepting requests, so route
+// handlers can treat db.* arrays as the single source of truth.
+load();
 
 const app = express();
 const PORT = 3000;
@@ -17,6 +24,9 @@ app.use(
 );
 
 app.use(express.json());
+
+// Resolve the X-User-Id header to a user record on every request (§6).
+app.use(identifyUser);
 
 app.get("/api/health", (req, res) => {
   res.json({ ok: true });
