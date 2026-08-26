@@ -17,3 +17,17 @@ export interface Group {
   createdBy: string; // Requester who became the first admin.
   createdAt: string; // ISO date string (approval time).
 }
+
+// Four join states on wireframe 04. Computed server-side so the client
+// does not have to keep age in localStorage.
+export type GroupJoinState = 'member' | 'joinable' | 'requested' | 'blocked';
+
+// Public row on the browse page (§6): no member/admin/banned IDs.
+export interface GroupSummary {
+  id: string;
+  title: string;
+  description: string;
+  ageLimit: number;
+  memberCount: number;
+  joinState: GroupJoinState;
+}
