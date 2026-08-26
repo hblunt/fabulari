@@ -1,6 +1,6 @@
 // client/src/app/features/groups/group-browse-page.ts
-// Every group in the system (wireframe 04). Pulled forward so GROUP_CREATE
-// and GROUP_JOIN can be raised in Stage 2; room/member admin stays Stage 3.
+// Every group in the system (wireframe 04). Four join states: member,
+// joinable, requested, age-blocked. Creating a group is itself a request.
 
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';

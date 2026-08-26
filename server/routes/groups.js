@@ -1,44 +1,76 @@
 // server/routes/groups.js
-// Pulled forward from group CRUD so join/create requests have a group list
-// to target. Only the two GETs from §6: the public browse list, and the
-// full record for members. Mutations stay for Stage 3.
+// Group list, detail, edit, delete, and membership (Phase1.md §6).
+// There is no POST on groups — creation is a GROUP_CREATE approval.
 
 const express = require("express");
 const { db } = require("../storage");
 const { fail } = require("../errors");
-const { requireAuth } = require("../middleware");
+const { writeAudit } = require("../audit");
+const { requireAuth, requireSuperAdmin, requireGroupAdmin, requireGroupMember } = require("../middleware");
 const { toPublicUser } = require("../users");
+const {
+  publicSummary,
+  publicUsersByIds,
+  applyPatch,
+  removeMember,
+  promote,
+  demote,
+  applyBan,
+} = require("../groups");
+const { deleteGroupCascade, actorName } = require("../requests");
 
 const router = express.Router();
 
 router.use(requireAuth);
 
-// Four join states from wireframe 04, computed here so the client does not
-// have to store age in localStorage (spec keeps age server-side).
-function joinState(user, group) {
-  if (group.members.includes(user.id)) return "member";
-  if (user.age < group.ageLimit) return "blocked";
-  const requested = db.requests.some(
-    (r) =>
-      r.type === "GROUP_JOIN" &&
-      r.status === "PENDING" &&
-      r.submittedBy === user.id &&
-      r.targetId === group.id
-  );
-  return requested ? "requested" : "joinable";
-}
-
 router.get("/", (req, res) => {
-  res.json({
-    groups: db.groups.map((g) => ({
-      id: g.id,
-      title: g.title,
-      description: g.description,
-      ageLimit: g.ageLimit,
-      memberCount: g.members.length,
-      joinState: joinState(req.user, g),
-    })),
-  });
+  res.json({ groups: db.groups.map((g) => publicSummary(req.user, g)) });
+});
+
+// Nested routes before /:id so "members" / "admins" / "bans" / "rooms" are not treated as IDs.
+router.get("/:id/rooms", requireGroupMember("id"), (req, res) => {
+  const rooms = db.rooms.filter((r) => r.groupId === req.group.id);
+  res.json({ rooms });
+});
+
+router.get("/:id/members", requireGroupAdmin("id"), (req, res) => {
+  res.json({ members: publicUsersByIds(req.group.members) });
+});
+
+router.delete("/:id/members/:userId", (req, res) => {
+  const group = db.groups.find((g) => g.id === req.params.id);
+  if (!group) return fail(res, 404, "Group not found.");
+  const result = removeMember(group, req.user, req.params.userId);
+  if (result.error) return fail(res, result.status, result.error);
+  res.status(204).end();
+});
+
+router.post("/:id/admins/:userId", requireGroupAdmin("id"), (req, res) => {
+  const result = promote(req.group, req.params.userId);
+  if (result.error) return fail(res, result.status, result.error);
+  res.status(204).end();
+});
+
+router.delete("/:id/admins/:userId", requireGroupAdmin("id"), (req, res) => {
+  const result = demote(req.group, req.params.userId);
+  if (result.error) return fail(res, result.status, result.error);
+  res.status(204).end();
+});
+
+router.get("/:id/bans", requireGroupAdmin("id"), (req, res) => {
+  res.json({ bannedUsers: publicUsersByIds(req.group.bannedUsers) });
+});
+
+router.post("/:id/bans/:userId", requireGroupAdmin("id"), (req, res) => {
+  const result = applyBan(req.group, req.user, req.params.userId, req.body?.requestId);
+  if (result.error) return fail(res, result.status, result.error);
+  writeAudit(
+    req.user,
+    "GROUP_BAN",
+    `User: ${actorName(req.params.userId)}`,
+    `Banned from ${req.group.title}. Report ${result.request.id}.`
+  );
+  res.status(204).end();
 });
 
 router.get("/:id", (req, res) => {
@@ -48,8 +80,8 @@ router.get("/:id", (req, res) => {
     req.user.role === "SUPER_ADMIN" || group.members.includes(req.user.id);
   if (!allowed) return fail(res, 403, "Members of this group only.");
 
-  // memberList is display-only so report/ban forms can show names without
-  // a separate users endpoint. The stored group still holds ID arrays.
+  // memberList is display-only so report forms can show names without a
+  // separate users endpoint. The stored group still holds ID arrays.
   res.json({
     group,
     memberList: group.members
@@ -57,6 +89,46 @@ router.get("/:id", (req, res) => {
       .filter(Boolean)
       .map(toPublicUser),
   });
+});
+
+router.patch("/:id", requireGroupAdmin("id"), (req, res) => {
+  const result = applyPatch(req.group, req.body);
+  if (result.error) return fail(res, result.status, result.error);
+  res.json({ group: result.group, removedMembers: result.removedMembers });
+});
+
+// Super admin only. The GROUP_DELETE request must already be approved;
+// approval itself does not remove the group (same pattern as SYSTEM_BAN).
+router.delete("/:id", requireSuperAdmin, (req, res) => {
+  const requestId = req.body?.requestId;
+  if (typeof requestId !== "string" || !requestId.trim()) {
+    return fail(res, 400, "An approved GROUP_DELETE requestId is required.");
+  }
+
+  const request = db.requests.find((r) => r.id === requestId.trim());
+  if (!request) return fail(res, 404, "Request not found.");
+  if (request.type !== "GROUP_DELETE") {
+    return fail(res, 400, "Request is not a group deletion.");
+  }
+  if (request.status !== "APPROVED") {
+    return fail(res, 409, "The deletion request has not been approved.");
+  }
+  if (request.targetId !== req.params.id) {
+    return fail(res, 409, "This request does not target that group.");
+  }
+
+  const group = db.groups.find((g) => g.id === req.params.id);
+  if (!group) return fail(res, 404, "Group not found.");
+
+  const title = group.title;
+  deleteGroupCascade(group.id, request.id);
+  writeAudit(
+    req.user,
+    "GROUP_DELETED",
+    `Group: ${title}`,
+    `Deletion requested by ${actorName(request.submittedBy)}.`
+  );
+  res.status(204).end();
 });
 
 module.exports = router;

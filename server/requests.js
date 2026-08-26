@@ -329,8 +329,12 @@ function applyApproval(actor, request) {
   if (request.type === "GROUP_DELETE") {
     const group = db.groups.find((g) => g.id === request.targetId);
     const title = group ? group.title : request.targetId;
-    deleteGroupCascade(request.targetId, request.id);
-    writeAudit(actor, "GROUP_DELETED", `Group: ${title}`, `Deletion requested by ${actorName(request.submittedBy)}.`);
+    writeAudit(
+      actor,
+      "GROUP_DELETE_APPROVED",
+      `Group: ${title}`,
+      `Deletion requested by ${actorName(request.submittedBy)}.`
+    );
   }
 
   if (request.type === "GROUP_JOIN") {
@@ -420,4 +424,6 @@ module.exports = {
   applyApproval,
   applyRejection,
   finalise,
+  deleteGroupCascade,
+  actorName,
 };
