@@ -6,7 +6,7 @@ const express = require("express");
 const { db } = require("../storage");
 const { fail } = require("../errors");
 const { writeAudit } = require("../audit");
-const { requireAuth, requireSuperAdmin, requireGroupAdmin } = require("../middleware");
+const { requireAuth, requireSuperAdmin, requireGroupAdmin, requireGroupMember } = require("../middleware");
 const { toPublicUser } = require("../users");
 const {
   publicSummary,
@@ -27,7 +27,12 @@ router.get("/", (req, res) => {
   res.json({ groups: db.groups.map((g) => publicSummary(req.user, g)) });
 });
 
-// Nested routes before /:id so "members" / "admins" / "bans" are not treated as IDs.
+// Nested routes before /:id so "members" / "admins" / "bans" / "rooms" are not treated as IDs.
+router.get("/:id/rooms", requireGroupMember("id"), (req, res) => {
+  const rooms = db.rooms.filter((r) => r.groupId === req.group.id);
+  res.json({ rooms });
+});
+
 router.get("/:id/members", requireGroupAdmin("id"), (req, res) => {
   res.json({ members: publicUsersByIds(req.group.members) });
 });

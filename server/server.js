@@ -11,6 +11,7 @@ const bootstrapRouter = require("./routes/bootstrap");
 const authRouter = require("./routes/auth");
 const requestsRouter = require("./routes/requests");
 const groupsRouter = require("./routes/groups");
+const roomsRouter = require("./routes/rooms");
 
 // Read every JSON collection into memory before accepting requests, so route
 // handlers can treat db.* arrays as the single source of truth.
@@ -41,6 +42,7 @@ app.use("/api/bootstrap", bootstrapRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/requests", requestsRouter);
 app.use("/api/groups", groupsRouter);
+app.use("/api/rooms", roomsRouter);
 
 app.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`);
