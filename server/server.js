@@ -7,6 +7,8 @@ const express = require("express");
 const cors = require("cors");
 const { load } = require("./storage");
 const { identifyUser } = require("./middleware");
+const bootstrapRouter = require("./routes/bootstrap");
+const authRouter = require("./routes/auth");
 
 // Read every JSON collection into memory before accepting requests, so route
 // handlers can treat db.* arrays as the single source of truth.
@@ -31,6 +33,10 @@ app.use(identifyUser);
 app.get("/api/health", (req, res) => {
   res.json({ ok: true });
 });
+
+// Feature routes, one router per area (§6). Stage 1: onboarding and auth.
+app.use("/api/bootstrap", bootstrapRouter);
+app.use("/api/auth", authRouter);
 
 app.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`);

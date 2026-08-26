@@ -2,7 +2,7 @@
   {
     "id": "u-0000adm1",
     "email": "admin@example.com",
-    "passwordHash": "PLACEHOLDER_UNTIL_STAGE_1_BCRYPT",
+    "passwordHash": "$2b$10$F13mzRQKFJHpcTCM3nnZQuRa5Qf0OR46ITuF/Lrh.h60WuyUud212",
     "firstName": "System",
     "lastName": "Administrator",
     "age": 40,
@@ -14,7 +14,7 @@
   {
     "id": "u-8f14e45f",
     "email": "holly@example.com",
-    "passwordHash": "PLACEHOLDER_UNTIL_STAGE_1_BCRYPT",
+    "passwordHash": "$2b$10$F13mzRQKFJHpcTCM3nnZQuRa5Qf0OR46ITuF/Lrh.h60WuyUud212",
     "firstName": "Holly",
     "lastName": "Bennett",
     "age": 21,
@@ -26,7 +26,7 @@
   {
     "id": "u-6512bd43",
     "email": "marcus@example.com",
-    "passwordHash": "PLACEHOLDER_UNTIL_STAGE_1_BCRYPT",
+    "passwordHash": "$2b$10$F13mzRQKFJHpcTCM3nnZQuRa5Qf0OR46ITuF/Lrh.h60WuyUud212",
     "firstName": "Marcus",
     "lastName": "Reid",
     "age": 24,
@@ -38,7 +38,7 @@
   {
     "id": "u-c20ad4d7",
     "email": "priya@example.com",
-    "passwordHash": "PLACEHOLDER_UNTIL_STAGE_1_BCRYPT",
+    "passwordHash": "$2b$10$F13mzRQKFJHpcTCM3nnZQuRa5Qf0OR46ITuF/Lrh.h60WuyUud212",
     "firstName": "Priya",
     "lastName": "Nair",
     "age": 19,
@@ -50,7 +50,7 @@
   {
     "id": "u-c51ce410",
     "email": "jordan@example.com",
-    "passwordHash": "PLACEHOLDER_UNTIL_STAGE_1_BCRYPT",
+    "passwordHash": "$2b$10$F13mzRQKFJHpcTCM3nnZQuRa5Qf0OR46ITuF/Lrh.h60WuyUud212",
     "firstName": "Jordan",
     "lastName": "Blake",
     "age": 26,
