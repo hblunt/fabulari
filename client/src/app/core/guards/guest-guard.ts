@@ -10,5 +10,7 @@ export const guestGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
 
-  return auth.currentUser() ? router.parseUrl('/groups') : true;
+  const user = auth.currentUser();
+  if (!user) return true;
+  return router.parseUrl(user.role === 'SUPER_ADMIN' ? '/admin/requests' : '/groups');
 };
