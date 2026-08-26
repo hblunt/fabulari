@@ -1,0 +1,51 @@
+// client/src/app/features/rooms/room-presence-list.ts
+// Who is in this room (wf-07), not the group's full roster. Mock data in
+// Phase 1 — sockets will drive this list later.
+
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { HlmAvatar, HlmAvatarFallback } from '@spartan-ng/helm/avatar';
+import type { PresencePerson } from './mock-messages';
+
+@Component({
+  selector: 'app-room-presence-list',
+  imports: [HlmAvatar, HlmAvatarFallback],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'flex h-full min-h-0 flex-1 flex-col overflow-y-auto' },
+  template: `
+    <div class="flex items-center justify-between">
+      <h2 class="text-sm font-medium">In this room</h2>
+      <span class="text-sm text-muted-foreground">{{ sorted().length }}</span>
+    </div>
+    <ul class="mt-3 flex flex-col gap-2">
+      @for (person of sorted(); track person.id) {
+        <li class="flex items-center gap-2 text-sm">
+          <hlm-avatar size="sm">
+            <span hlmAvatarFallback>{{ person.firstName.charAt(0) }}{{ person.lastName.charAt(0) }}</span>
+          </hlm-avatar>
+          <span>
+            {{ person.firstName }} {{ person.lastName }}
+            @if (person.id === currentUserId()) {
+              <span class="ml-1 rounded-full bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">You</span>
+            }
+            @if (person.isAdmin) {
+              <span class="ml-1 rounded-full bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">Group admin</span>
+            }
+          </span>
+        </li>
+      }
+    </ul>
+    <p class="mt-auto pt-4 text-xs text-muted-foreground">
+      Alphabetical. Presence only — not the full group membership.
+    </p>
+  `,
+})
+export class RoomPresenceList {
+  readonly people = input.required<PresencePerson[]>();
+  readonly currentUserId = input.required<string>();
+
+  protected readonly sorted = computed(() =>
+    [...this.people()].sort(
+      (a, b) => a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName),
+    ),
+  );
+}

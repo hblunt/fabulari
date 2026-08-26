@@ -1,9 +1,10 @@
 <!-- client/src/app/app.html
      Single application shell: nav (hidden while signed out), routed content,
-     and the toast host. -->
+     and the toast host. Auth pages fill the viewport themselves. The room
+     view uses the leftover height under the nav, so main is not min-h-screen. -->
 <app-nav-bar />
 
-<main class="min-h-screen">
+<main>
   <router-outlet />
 </main>
 
