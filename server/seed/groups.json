@@ -10,5 +10,53 @@
     "bannedUsers": ["u-c51ce410"],
     "createdBy": "u-8f14e45f",
     "createdAt": "2026-08-20T14:02:00.000Z"
+  },
+  {
+    "id": "g-45c48cce",
+    "title": "Book Club",
+    "description": "Monthly reads and spoiler-light discussion.",
+    "ageLimit": 12,
+    "theme": "ocean",
+    "members": ["u-6512bd43"],
+    "admins": ["u-6512bd43"],
+    "bannedUsers": [],
+    "createdBy": "u-6512bd43",
+    "createdAt": "2026-08-21T15:00:00.000Z"
+  },
+  {
+    "id": "g-d3d94468",
+    "title": "Writers Circle",
+    "description": "Short fiction and script notes.",
+    "ageLimit": 0,
+    "theme": "plum",
+    "members": ["u-6512bd43"],
+    "admins": ["u-6512bd43"],
+    "bannedUsers": [],
+    "createdBy": "u-6512bd43",
+    "createdAt": "2026-08-22T09:00:00.000Z"
+  },
+  {
+    "id": "g-9bf31c7f",
+    "title": "Night Shift",
+    "description": "Late-night coding. 25 and over.",
+    "ageLimit": 25,
+    "theme": "ember",
+    "members": ["u-7c222fb2"],
+    "admins": ["u-7c222fb2"],
+    "bannedUsers": [],
+    "createdBy": "u-7c222fb2",
+    "createdAt": "2026-08-22T10:30:00.000Z"
+  },
+  {
+    "id": "g-1fc8e63a",
+    "title": "Sketch Night",
+    "description": "A quiet drawing group with no rooms yet.",
+    "ageLimit": 0,
+    "theme": "sand",
+    "members": ["u-8f14e45f"],
+    "admins": ["u-8f14e45f"],
+    "bannedUsers": [],
+    "createdBy": "u-8f14e45f",
+    "createdAt": "2026-08-23T08:00:00.000Z"
   }
 ]

@@ -30,28 +30,30 @@ import { TYPE_LABELS, awaitingLabel, queueDetail, queueTitle, relativeTime } fro
           <p class="mt-2 text-sm text-muted-foreground">Reason: {{ r.reason }}</p>
         }
       } @else {
-        <div class="flex flex-wrap items-start gap-3">
+        <div class="flex flex-wrap items-center gap-3">
           <div class="min-w-0 flex-1">
             <p class="font-medium">{{ queueTitle(r) }}</p>
             <p class="mt-0.5 text-sm text-muted-foreground">{{ queueDetail(r) }}</p>
+            @if (r.wasBanned) {
+              <span hlmBadge variant="destructive" class="mt-1">Cannot rejoin</span>
+            }
           </div>
-          @if (r.wasBanned) {
-            <span hlmBadge variant="destructive">Cannot rejoin</span>
-          }
-          <span class="text-xs text-muted-foreground">{{ relativeTime(r.createdAt) }}</span>
-          <div class="flex gap-2">
-            <button hlmBtn variant="outline" size="sm" type="button" [disabled]="busy()" (click)="reject.emit()">
-              Reject
-            </button>
-            <button
-              hlmBtn
-              size="sm"
-              type="button"
-              [disabled]="busy() || r.wasBanned"
-              (click)="approve.emit()"
-            >
-              Approve
-            </button>
+          <div class="flex shrink-0 items-center gap-3">
+            <span class="text-xs text-muted-foreground">{{ relativeTime(r.createdAt) }}</span>
+            <div class="flex gap-2">
+              <button hlmBtn variant="outline" size="sm" type="button" [disabled]="busy()" (click)="reject.emit()">
+                Reject
+              </button>
+              <button
+                hlmBtn
+                size="sm"
+                type="button"
+                [disabled]="busy() || r.wasBanned"
+                (click)="approve.emit()"
+              >
+                Approve
+              </button>
+            </div>
           </div>
         </div>
       }

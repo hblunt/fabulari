@@ -4,17 +4,18 @@
 
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { HlmAvatar, HlmAvatarFallback } from '@spartan-ng/helm/avatar';
+import { CountBadge } from '../../shared/count-badge';
 import type { PresencePerson } from './mock-messages';
 
 @Component({
   selector: 'app-room-presence-list',
-  imports: [HlmAvatar, HlmAvatarFallback],
+  imports: [HlmAvatar, HlmAvatarFallback, CountBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex h-full min-h-0 flex-1 flex-col overflow-y-auto' },
   template: `
-    <div class="flex items-center justify-between">
+    <div class="flex items-center gap-2">
       <h2 class="text-sm font-medium">In this room</h2>
-      <span class="text-sm text-muted-foreground">{{ sorted().length }}</span>
+      <app-count-badge [value]="sorted().length" />
     </div>
     <ul class="mt-3 flex flex-col gap-2">
       @for (person of sorted(); track person.id) {

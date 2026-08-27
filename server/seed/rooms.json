@@ -12,5 +12,19 @@
     "name": "classics",
     "description": "Anything released before 2000.",
     "createdAt": "2026-08-21T16:20:00.000Z"
+  },
+  {
+    "id": "r-1c9bf4a0",
+    "groupId": "g-45c48cce",
+    "name": "currently-reading",
+    "description": "Whatever the club picked this month.",
+    "createdAt": "2026-08-21T15:20:00.000Z"
+  },
+  {
+    "id": "r-3c59dc04",
+    "groupId": "g-9bf31c7f",
+    "name": "after-hours",
+    "description": "What we are actually shipping.",
+    "createdAt": "2026-08-22T10:45:00.000Z"
   }
 ]

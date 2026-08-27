@@ -20,7 +20,7 @@
     "age": 21,
     "role": "USER",
     "profilePicture": null,
-    "groups": ["g-c9f0f895"],
+    "groups": ["g-c9f0f895", "g-1fc8e63a"],
     "createdAt": "2026-08-20T10:00:00.000Z"
   },
   {
@@ -32,7 +32,7 @@
     "age": 24,
     "role": "USER",
     "profilePicture": null,
-    "groups": ["g-c9f0f895"],
+    "groups": ["g-c9f0f895", "g-45c48cce", "g-d3d94468"],
     "createdAt": "2026-08-20T11:30:00.000Z"
   },
   {
@@ -58,5 +58,17 @@
     "profilePicture": null,
     "groups": [],
     "createdAt": "2026-08-21T09:45:00.000Z"
+  },
+  {
+    "id": "u-7c222fb2",
+    "email": "elena@example.com",
+    "passwordHash": "$2b$10$F13mzRQKFJHpcTCM3nnZQuRa5Qf0OR46ITuF/Lrh.h60WuyUud212",
+    "firstName": "Elena",
+    "lastName": "Vargas",
+    "age": 28,
+    "role": "USER",
+    "profilePicture": null,
+    "groups": ["g-9bf31c7f"],
+    "createdAt": "2026-08-21T12:00:00.000Z"
   }
 ]

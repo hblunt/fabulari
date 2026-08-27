@@ -1,11 +1,92 @@
 [
   {
+    "id": "a-c4ca4238",
+    "type": "GROUP_CREATED",
+    "actorName": "System Administrator",
+    "actorEmail": "admin@example.com",
+    "targetLabel": "Group: Film Discussion",
+    "detail": "Requested by Holly Bennett.",
+    "timestamp": "2026-08-20T14:02:00.000Z"
+  },
+  {
+    "id": "a-eccbc87e",
+    "type": "GROUP_JOIN_APPROVED",
+    "actorName": "Holly Bennett",
+    "actorEmail": "holly@example.com",
+    "targetLabel": "Group: Film Discussion",
+    "detail": "Priya Nair joined.",
+    "timestamp": "2026-08-21T08:20:00.000Z"
+  },
+  {
+    "id": "a-a87ff679",
+    "type": "ROOM_CREATED",
+    "actorName": "Holly Bennett",
+    "actorEmail": "holly@example.com",
+    "targetLabel": "Room: new-releases",
+    "detail": "In group Film Discussion.",
+    "timestamp": "2026-08-21T08:30:00.000Z"
+  },
+  {
+    "id": "a-e4da3b7f",
+    "type": "ROOM_CREATED",
+    "actorName": "Holly Bennett",
+    "actorEmail": "holly@example.com",
+    "targetLabel": "Room: classics",
+    "detail": "In group Film Discussion.",
+    "timestamp": "2026-08-21T16:20:00.000Z"
+  },
+  {
+    "id": "a-1679091c",
+    "type": "USER_REPORT_APPROVED",
+    "actorName": "Holly Bennett",
+    "actorEmail": "holly@example.com",
+    "targetLabel": "User: Jordan Blake",
+    "detail": "Permits a group ban.",
+    "timestamp": "2026-08-21T18:00:00.000Z"
+  },
+  {
+    "id": "a-8c37914d",
+    "type": "GROUP_BAN",
+    "actorName": "Holly Bennett",
+    "actorEmail": "holly@example.com",
+    "targetLabel": "User: Jordan Blake",
+    "detail": "Banned from Film Discussion.",
+    "timestamp": "2026-08-21T18:05:00.000Z"
+  },
+  {
     "id": "a-b6d767d2",
     "type": "SYSTEM_BAN_APPROVED",
     "actorName": "System Administrator",
     "actorEmail": "admin@example.com",
     "targetLabel": "User: Sam Doyle (banned@example.com)",
     "detail": "Ban requested by Holly Bennett.",
+    "timestamp": "2026-08-22T11:00:00.000Z"
+  },
+  {
+    "id": "a-45c48cce",
+    "type": "USER_DELETED",
+    "actorName": "System Administrator",
+    "actorEmail": "admin@example.com",
+    "targetLabel": "User: Sam Doyle (banned@example.com)",
+    "detail": "Deletion requested by Holly Bennett (holly@example.com).",
     "timestamp": "2026-08-22T11:05:00.000Z"
+  },
+  {
+    "id": "a-9bf31c7f",
+    "type": "GROUP_CREATE_REJECTED",
+    "actorName": "System Administrator",
+    "actorEmail": "admin@example.com",
+    "targetLabel": "Group request: Late Night Trivia",
+    "detail": "Too similar to Film Discussion.",
+    "timestamp": "2026-08-22T18:40:00.000Z"
+  },
+  {
+    "id": "a-d3d94468",
+    "type": "SYSTEM_BAN_APPROVED",
+    "actorName": "System Administrator",
+    "actorEmail": "admin@example.com",
+    "targetLabel": "User: Jordan Blake",
+    "detail": "Ban requested by Holly Bennett.",
+    "timestamp": "2026-08-23T16:30:00.000Z"
   }
 ]
