@@ -26,14 +26,13 @@ import { TYPE_LABELS, awaitingLabel, queueDetail, queueTitle, relativeTime } fro
             {{ r.status === 'PENDING' ? awaitingLabel(r.type) : relativeTime(r.actionedAt ?? r.createdAt) }}
           </span>
         </div>
-        @if (r.status === 'REJECTED' && r.reason) {
-          <p class="mt-2 text-sm text-muted-foreground">Reason: {{ r.reason }}</p>
-        }
       } @else {
         <div class="flex flex-wrap items-center gap-3">
           <div class="min-w-0 flex-1">
             <p class="font-medium">{{ queueTitle(r) }}</p>
-            <p class="mt-0.5 text-sm text-muted-foreground">{{ queueDetail(r) }}</p>
+            @if (queueDetail(r)) {
+              <p class="mt-0.5 text-sm text-muted-foreground">{{ queueDetail(r) }}</p>
+            }
             @if (r.wasBanned) {
               <span hlmBadge variant="destructive" class="mt-1">Cannot rejoin</span>
             }
@@ -55,6 +54,13 @@ import { TYPE_LABELS, awaitingLabel, queueDetail, queueTitle, relativeTime } fro
               </button>
             </div>
           </div>
+        </div>
+      }
+
+      @if (r.reason) {
+        <div class="rounded-lg border bg-muted/50 px-3 py-2">
+          <p class="text-xs font-medium text-muted-foreground">Reason</p>
+          <p class="mt-1 text-sm">{{ r.reason }}</p>
         </div>
       }
     </article>

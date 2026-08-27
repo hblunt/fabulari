@@ -24,3 +24,7 @@ export type MessageType = 'TEXT' | 'IMAGE';
 export const GROUP_THEMES = ['slate', 'moss', 'ocean', 'plum', 'ember', 'sand'] as const;
 
 export type GroupTheme = (typeof GROUP_THEMES)[number];
+
+export function themeLabel(theme: string): string {
+  return theme.charAt(0).toUpperCase() + theme.slice(1);
+}

@@ -43,8 +43,8 @@ import { ConfirmDialog, type ConfirmDialogContext } from '../requests/confirm-di
             <hlm-avatar size="sm">
               <span hlmAvatarFallback>{{ initials(user) }}</span>
             </hlm-avatar>
-            <span class="min-w-32 font-medium">{{ user.firstName }} {{ user.lastName }}</span>
-            <span class="min-w-40 text-muted-foreground">{{ user.email }}</span>
+            <span class="w-56 shrink-0 font-medium">{{ user.firstName }} {{ user.lastName }}</span>
+            <span class="min-w-44 text-muted-foreground">{{ user.email }}</span>
             <span class="w-10 text-muted-foreground">{{ user.age }}</span>
             <span class="w-16 text-muted-foreground">{{ user.groups.length }}</span>
             <span class="flex min-w-36 items-center gap-2">
@@ -60,6 +60,7 @@ import { ConfirmDialog, type ConfirmDialogContext } from '../requests/confirm-di
               class="ml-auto"
               type="button"
               [disabled]="!canDelete(user)"
+              [attr.title]="deleteHint(user)"
               (click)="remove(user)"
             >
               Delete
@@ -127,6 +128,13 @@ export class AdminUsersPage {
     return user.role !== 'SUPER_ADMIN' && !this.isSoleAdmin(user.id) && this.banByTarget().has(user.id);
   }
 
+  protected deleteHint(user: User): string {
+    if (user.role === 'SUPER_ADMIN') return 'The super admin cannot be deleted.';
+    if (this.isSoleAdmin(user.id)) return 'Sole admin of a group with other members — appoint a replacement first.';
+    if (!this.banByTarget().has(user.id)) return 'Needs an approved system ban request.';
+    return '';
+  }
+
   protected remove(user: User): void {
     const request = this.banByTarget().get(user.id);
     if (!request || !this.canDelete(user)) return;
@@ -166,7 +174,13 @@ export class AdminUsersPage {
       .subscribe({
         next: ({ users, groups, bans }) => {
           this.users.set(users);
-          this.soleAdminIds.set(new Set(groups.filter((g) => g.admins.length === 1).map((g) => g.admins[0])));
+          this.soleAdminIds.set(
+            new Set(
+              groups
+                .filter((g) => g.admins.length === 1 && g.members.some((id) => id !== g.admins[0]))
+                .map((g) => g.admins[0]),
+            ),
+          );
           this.groupAdminIds.set(new Set(groups.flatMap((g) => g.admins)));
           this.banByTarget.set(new Map(bans.filter((r) => r.targetId).map((r) => [r.targetId as string, r])));
         },

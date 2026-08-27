@@ -5,6 +5,7 @@
 const bcrypt = require("bcrypt");
 const { db, save } = require("./storage");
 const { newId } = require("./ids");
+const { deleteGroupCascade } = require("./requests");
 
 // 10 rounds is the bcrypt default cost: slow enough to resist brute force,
 // fast enough not to make login sluggish.
@@ -85,7 +86,14 @@ function publicUsersByIds(ids) {
 }
 
 function isSoleAdminAnywhere(userId) {
-  return db.groups.some((g) => g.admins.includes(userId) && g.admins.length === 1);
+  // Block only when other members would be left without an admin. A last
+  // remaining member can be deleted — that group is removed with them.
+  return db.groups.some(
+    (g) =>
+      g.admins.includes(userId) &&
+      g.admins.length === 1 &&
+      g.members.some((id) => id !== userId),
+  );
 }
 
 // Super admin sees everyone (optional groupId narrows). A group admin only
@@ -169,6 +177,12 @@ function applyUserDelete(userId, requestId) {
   }
   save("groups");
 
+  const emptiedGroups = db.groups.filter((g) => g.members.length === 0);
+  const emptiedTitles = emptiedGroups.map((g) => g.title);
+  for (const group of emptiedGroups) {
+    deleteGroupCascade(group.id, request.id);
+  }
+
   db.requests = db.requests.filter((r) => {
     if (r.id === request.id) return true;
     if (r.status !== "PENDING") return true;
@@ -180,7 +194,7 @@ function applyUserDelete(userId, requestId) {
   db.users = db.users.filter((u) => u.id !== userId);
   save("users");
 
-  return { ok: true, request, user: snapshot, tombstone };
+  return { ok: true, request, user: snapshot, tombstone, emptiedGroups: emptiedTitles };
 }
 
 function applyMePatch(user, body) {
