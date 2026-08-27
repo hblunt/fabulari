@@ -1,7 +1,7 @@
 // client/src/app/features/requests/request-labels.ts
 // Shared copy for request rows so My requests and the queue stay in lockstep.
 
-import type { AppRequest, RequestType } from '../../core/models';
+import { themeLabel, type AppRequest, type RequestType } from '../../core/models';
 
 export const TYPE_LABELS: Record<RequestType, string> = {
   GROUP_CREATE: 'Group creation',
@@ -40,14 +40,14 @@ export function queueDetail(request: AppRequest): string {
     return desc ? `"${request.targetName}" — ${desc}` : `"${request.targetName}"`;
   }
   if (request.type === 'USER_REPORT') {
-    return request.reason ?? '';
+    return request.groupName ? `In ${request.groupName}` : '';
   }
   if (request.type === 'GROUP_CREATE') {
     const payload = request.payload as
       | { description?: string; ageLimit?: number; theme?: string }
       | undefined;
     const age = payload?.ageLimit === 0 ? 'All ages' : `${payload?.ageLimit}+`;
-    return `"${request.targetName}" · ${payload?.description} · ${age} · ${payload?.theme} theme`;
+    return `"${request.targetName}" · ${payload?.description} · ${age} · ${themeLabel(payload?.theme ?? '')} theme`;
   }
   if (request.type === 'GROUP_DELETE') {
     const members = request.memberCount ?? 0;
@@ -55,7 +55,9 @@ export function queueDetail(request: AppRequest): string {
     return `"${request.targetName}" · ${members} member${members === 1 ? '' : 's'} · ${rooms} room${rooms === 1 ? '' : 's'}`;
   }
   if (request.type === 'SYSTEM_BAN') {
-    return request.reason ?? `${request.submitterName} requests removal of ${request.targetName}`;
+    return request.reason
+      ? ''
+      : `${request.submitterName} requests removal of ${request.targetName}`;
   }
   return '';
 }

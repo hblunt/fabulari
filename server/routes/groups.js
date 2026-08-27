@@ -18,6 +18,7 @@ const {
   applyBan,
 } = require("../groups");
 const { deleteGroupCascade, actorName } = require("../requests");
+const { createRoom } = require("../rooms");
 
 const router = express.Router();
 
@@ -31,6 +32,15 @@ router.get("/", (req, res) => {
 router.get("/:id/rooms", requireGroupMember("id"), (req, res) => {
   const rooms = db.rooms.filter((r) => r.groupId === req.group.id);
   res.json({ rooms });
+});
+
+// Direct create (Phase1 matrix: group admin may create a room). Members still
+// propose via ROOM_CREATE — an admin cannot approve their own request.
+router.post("/:id/rooms", requireGroupAdmin("id"), (req, res) => {
+  const result = createRoom(req.group, req.body ?? {});
+  if (result.error) return fail(res, result.status, result.error);
+  writeAudit(req.user, "ROOM_CREATED", `Room: ${result.room.name}`, `In group ${req.group.title}.`);
+  res.status(201).json({ room: result.room });
 });
 
 router.get("/:id/members", requireGroupAdmin("id"), (req, res) => {

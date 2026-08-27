@@ -1,6 +1,6 @@
 // client/src/app/features/requests/my-requests-page.ts
-// The signed-in user's own submissions (wireframe 09). Filter chips; rejection
-// reasons inline; no withdraw action — the spec forbids it.
+// The signed-in user's own submissions (wireframe 09). Filter chips; reasons
+// sit in a nested card on the row; no withdraw action — the spec forbids it.
 
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { HlmButton } from '@spartan-ng/helm/button';

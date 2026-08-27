@@ -1,6 +1,6 @@
 // server/routes/rooms.js
-// Room read, edit and delete by ID (Phase1.md §6). There is no POST —
-// rooms are created only by approving a ROOM_CREATE request.
+// Room read, edit and delete by ID (Phase1.md §6). Create is POST
+// /api/groups/:id/rooms for group admins; members still use ROOM_CREATE.
 
 const express = require("express");
 const { db } = require("../storage");

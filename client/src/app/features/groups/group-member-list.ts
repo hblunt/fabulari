@@ -14,15 +14,16 @@ import { ConfirmDialog, type ConfirmDialogContext } from '../requests/confirm-di
 import { ReasonDialog, type ReasonDialogContext } from '../requests/reason-dialog';
 import { ReportUserForm, type ReportUserFormContext } from '../requests/report-user-form';
 import { RequestService } from '../../core/services/request-service';
+import { CountBadge } from '../../shared/count-badge';
 
 @Component({
   selector: 'app-group-member-list',
-  imports: [HlmAvatar, HlmAvatarFallback, HlmButton],
+  imports: [HlmAvatar, HlmAvatarFallback, HlmButton, CountBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex items-center justify-between">
+    <div class="flex items-center gap-2">
       <h2 class="text-lg font-medium">Members</h2>
-      <span class="text-sm text-muted-foreground">{{ sorted().length }}</span>
+      <app-count-badge [value]="sorted().length" />
     </div>
 
     <ul class="mt-3 divide-y rounded-xl border">
@@ -34,13 +35,13 @@ import { RequestService } from '../../core/services/request-service';
           <span class="min-w-0 flex-1">
             {{ member.firstName }} {{ member.lastName }}
             @if (member.id === currentUserId()) {
-              <span class="text-muted-foreground"> · you</span>
+              <span class="text-muted-foreground"> · You</span>
             }
             @if (isAdminMember(member.id)) {
               <span class="text-muted-foreground"> · Group admin</span>
             }
           </span>
-          @if (isAdmin()) {
+          @if (isAdmin() && hasMenu(member)) {
             <details class="relative">
               <summary class="cursor-pointer list-none px-2 text-muted-foreground" aria-label="Member actions">⋯</summary>
               <div class="absolute right-0 z-10 mt-1 flex min-w-40 flex-col rounded-md border bg-popover p-1 shadow">
@@ -109,6 +110,16 @@ export class GroupMemberList {
 
   protected isSoleAdmin(userId: string): boolean {
     return this.isAdminMember(userId) && this.group().admins.length === 1;
+  }
+
+  // Hide ⋯ when every action in the menu would be skipped (own row as sole admin).
+  protected hasMenu(member: User): boolean {
+    const self = member.id === this.currentUserId();
+    const canPromote = !this.isAdminMember(member.id);
+    const canDemote = this.isAdminMember(member.id) && !this.isSoleAdmin(member.id);
+    const canRemove = !this.isSoleAdmin(member.id) && !self;
+    const canBan = !self;
+    return canPromote || canDemote || canRemove || canBan;
   }
 
   protected promote(member: User): void {

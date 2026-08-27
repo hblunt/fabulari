@@ -16,6 +16,7 @@ import { ConfirmDialog, type ConfirmDialogContext } from './confirm-dialog';
 import { ReasonDialog, type ReasonDialogContext } from './reason-dialog';
 import { RequestItem } from './request-item';
 import { TYPE_LABELS } from './request-labels';
+import { CountBadge } from '../../shared/count-badge';
 
 interface Chip {
   id: RequestType | 'ALL';
@@ -38,15 +39,15 @@ const ADMIN_CHIPS: Chip[] = [
 
 @Component({
   selector: 'app-request-queue',
-  imports: [HlmButton, RequestItem],
+  imports: [HlmButton, RequestItem, CountBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section [class]="groupId() ? '' : 'mx-auto max-w-6xl px-4 py-8'">
       @if (groupId()) {
-        <h2 class="text-xl font-semibold">
-          Pending requests
-          <span class="text-base font-normal text-muted-foreground">{{ visible().length }}</span>
-        </h2>
+        <div class="flex items-center gap-2">
+          <h2 class="text-xl font-semibold">Pending requests</h2>
+          <app-count-badge [value]="visible().length" />
+        </div>
       } @else {
         <h1 class="text-2xl font-semibold">Pending requests</h1>
       }

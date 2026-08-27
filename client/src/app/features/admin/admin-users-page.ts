@@ -1,7 +1,7 @@
 // client/src/app/features/admin/admin-users-page.ts
-// Every account (wf-13). Delete needs an approved SYSTEM_BAN and is blocked
-// while the user is the sole admin of any group. Sole-admin is derived from
-// GET /api/groups/:id — the users list does not include admin arrays.
+// Every account (wf-13). Delete needs an approved SYSTEM_BAN. Super-admin
+// delete appoints the next remaining member alphabetically if they were the
+// sole admin; leave/remove still refuse to orphan a group.
 
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { forkJoin, map, of, switchMap, take } from 'rxjs';
@@ -43,8 +43,8 @@ import { ConfirmDialog, type ConfirmDialogContext } from '../requests/confirm-di
             <hlm-avatar size="sm">
               <span hlmAvatarFallback>{{ initials(user) }}</span>
             </hlm-avatar>
-            <span class="min-w-32 font-medium">{{ user.firstName }} {{ user.lastName }}</span>
-            <span class="min-w-40 text-muted-foreground">{{ user.email }}</span>
+            <span class="w-56 shrink-0 font-medium">{{ user.firstName }} {{ user.lastName }}</span>
+            <span class="min-w-44 text-muted-foreground">{{ user.email }}</span>
             <span class="w-10 text-muted-foreground">{{ user.age }}</span>
             <span class="w-16 text-muted-foreground">{{ user.groups.length }}</span>
             <span class="flex min-w-36 items-center gap-2">
@@ -60,6 +60,7 @@ import { ConfirmDialog, type ConfirmDialogContext } from '../requests/confirm-di
               class="ml-auto"
               type="button"
               [disabled]="!canDelete(user)"
+              [attr.title]="deleteHint(user)"
               (click)="remove(user)"
             >
               Delete
@@ -71,8 +72,9 @@ import { ConfirmDialog, type ConfirmDialogContext } from '../requests/confirm-di
       </ul>
 
       <p class="mt-6 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
-        Deletion requires an approved system ban request and is blocked while the
-        user is the sole admin of any group.
+        Deletion requires an approved system ban. If they were the sole admin of a
+        group that still has members, the next member alphabetically becomes admin.
+        Empty groups are removed. Leaving a group as sole admin is still blocked.
       </p>
     </section>
   `,
@@ -124,7 +126,13 @@ export class AdminUsersPage {
   }
 
   protected canDelete(user: User): boolean {
-    return user.role !== 'SUPER_ADMIN' && !this.isSoleAdmin(user.id) && this.banByTarget().has(user.id);
+    return user.role !== 'SUPER_ADMIN' && this.banByTarget().has(user.id);
+  }
+
+  protected deleteHint(user: User): string {
+    if (user.role === 'SUPER_ADMIN') return 'The super admin cannot be deleted.';
+    if (!this.banByTarget().has(user.id)) return 'Needs an approved system ban request.';
+    return '';
   }
 
   protected remove(user: User): void {
@@ -134,6 +142,9 @@ export class AdminUsersPage {
       context: {
         title: `Delete ${user.firstName} ${user.lastName}?`,
         subtitle: 'Their account is removed immediately. The email can never be registered again.',
+        notice: this.isSoleAdmin(user.id)
+          ? 'They are the sole admin of a group with members. The next member alphabetically becomes admin.'
+          : undefined,
         confirmLabel: 'Delete account',
       },
     });
@@ -166,7 +177,13 @@ export class AdminUsersPage {
       .subscribe({
         next: ({ users, groups, bans }) => {
           this.users.set(users);
-          this.soleAdminIds.set(new Set(groups.filter((g) => g.admins.length === 1).map((g) => g.admins[0])));
+          this.soleAdminIds.set(
+            new Set(
+              groups
+                .filter((g) => g.admins.length === 1 && g.members.some((id) => id !== g.admins[0]))
+                .map((g) => g.admins[0]),
+            ),
+          );
           this.groupAdminIds.set(new Set(groups.flatMap((g) => g.admins)));
           this.banByTarget.set(new Map(bans.filter((r) => r.targetId).map((r) => [r.targetId as string, r])));
         },

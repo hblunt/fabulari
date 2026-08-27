@@ -7,6 +7,6 @@ import { classes } from '@spartan-ng/helm/utils';
 })
 export class HlmDialogFooter {
   constructor() {
-    classes(() => 'flex flex-col-reverse gap-2 sm:flex-row sm:justify-end');
+    classes(() => 'mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end');
   }
 }

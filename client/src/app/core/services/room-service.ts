@@ -1,6 +1,6 @@
 // client/src/app/core/services/room-service.ts
-// Room HTTP (Phase1.md §6). No create method — rooms appear by approving
-// a ROOM_CREATE request.
+// Room HTTP (Phase1.md §6). Group admins POST a room; members propose
+// via ROOM_CREATE.
 
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
@@ -15,6 +15,12 @@ export class RoomService {
     return this.http
       .get<{ rooms: Room[] }>(`/api/groups/${groupId}/rooms`)
       .pipe(map((res) => res.rooms));
+  }
+
+  create(groupId: string, body: { name: string; description?: string }): Observable<Room> {
+    return this.http
+      .post<{ room: Room }>(`/api/groups/${groupId}/rooms`, body)
+      .pipe(map((res) => res.room));
   }
 
   patch(id: string, body: Partial<Pick<Room, 'name' | 'description'>>): Observable<Room> {

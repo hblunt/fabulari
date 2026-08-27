@@ -50,6 +50,22 @@ router.delete("/:id", requireSuperAdmin, (req, res) => {
     `User: ${result.user.firstName} ${result.user.lastName} (${result.user.email})`,
     `Deletion requested by ${result.tombstone.requestedBy}.`,
   );
+  for (const title of result.emptiedGroups ?? []) {
+    writeAudit(
+      req.user,
+      "GROUP_DELETED",
+      `Group: ${title}`,
+      `Removed because ${result.user.firstName} ${result.user.lastName} was its last member.`,
+    );
+  }
+  for (const row of result.appointed ?? []) {
+    writeAudit(
+      req.user,
+      "GROUP_ADMIN_APPOINTED",
+      `User: ${row.name}`,
+      `Became admin of ${row.groupTitle} after ${result.user.firstName} ${result.user.lastName} was deleted.`,
+    );
+  }
   res.status(204).end();
 });
 

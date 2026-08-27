@@ -1,6 +1,6 @@
 // client/src/app/features/groups/room-list.ts
-// Rooms in this group (wf-05/06). Membership opens every room. Admins edit
-// and delete; proposing a new room is still a request.
+// Rooms in this group (wf-05/06). Membership opens every room. Admins add
+// rooms immediately; members propose via a ROOM_CREATE request.
 
 import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -64,7 +64,7 @@ export class RoomList {
     });
     ref.closed$.pipe(take(1)).subscribe((ok) => {
       if (!ok) return;
-      this.notify.success('Room request submitted.');
+      this.notify.success(this.isAdmin() ? 'Room added.' : 'Room request submitted.');
       this.changed.emit();
     });
   }

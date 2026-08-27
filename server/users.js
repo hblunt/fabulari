@@ -5,6 +5,7 @@
 const bcrypt = require("bcrypt");
 const { db, save } = require("./storage");
 const { newId } = require("./ids");
+const { deleteGroupCascade } = require("./requests");
 
 // 10 rounds is the bcrypt default cost: slow enough to resist brute force,
 // fast enough not to make login sluggish.
@@ -84,8 +85,18 @@ function publicUsersByIds(ids) {
     .map(toPublicUser);
 }
 
-function isSoleAdminAnywhere(userId) {
-  return db.groups.some((g) => g.admins.includes(userId) && g.admins.length === 1);
+function sortMembers(a, b) {
+  return a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName);
+}
+
+// Super-admin delete only. Leave/demote still refuse to orphan a group.
+function successorAdminId(group, departingId) {
+  const remaining = group.members
+    .filter((id) => id !== departingId)
+    .map((id) => db.users.find((u) => u.id === id))
+    .filter(Boolean)
+    .sort(sortMembers);
+  return remaining[0]?.id ?? null;
 }
 
 // Super admin sees everyone (optional groupId narrows). A group admin only
@@ -146,9 +157,6 @@ function applyUserDelete(userId, requestId) {
   if (user.role === "SUPER_ADMIN") {
     return { status: 403, error: "The super admin cannot be deleted." };
   }
-  if (isSoleAdminAnywhere(userId)) {
-    return { status: 409, error: "This user is the sole admin of a group." };
-  }
 
   const tombstone = {
     id: newId("bannedAccount"),
@@ -162,12 +170,36 @@ function applyUserDelete(userId, requestId) {
   db.bannedAccounts.push(tombstone);
   save("bannedAccounts");
 
+  // Appoint a successor before stripping them, so leave/remove stay blocked
+  // while this path (system delete) can finish. Alphabetical last-name then
+  // first-name, same order as member lists.
+  const appointed = [];
+  for (const group of db.groups) {
+    const soleAdmin = group.admins.includes(userId) && group.admins.length === 1;
+    const othersRemain = group.members.some((id) => id !== userId);
+    if (!soleAdmin || !othersRemain) continue;
+    const nextId = successorAdminId(group, userId);
+    if (!nextId) continue;
+    const next = db.users.find((u) => u.id === nextId);
+    if (!group.admins.includes(nextId)) group.admins.push(nextId);
+    appointed.push({
+      groupTitle: group.title,
+      name: next ? `${next.firstName} ${next.lastName}` : nextId,
+    });
+  }
+
   for (const group of db.groups) {
     group.members = group.members.filter((id) => id !== userId);
     group.admins = group.admins.filter((id) => id !== userId);
     group.bannedUsers = group.bannedUsers.filter((id) => id !== userId);
   }
   save("groups");
+
+  const emptiedGroups = db.groups.filter((g) => g.members.length === 0);
+  const emptiedTitles = emptiedGroups.map((g) => g.title);
+  for (const group of emptiedGroups) {
+    deleteGroupCascade(group.id, request.id);
+  }
 
   db.requests = db.requests.filter((r) => {
     if (r.id === request.id) return true;
@@ -180,7 +212,7 @@ function applyUserDelete(userId, requestId) {
   db.users = db.users.filter((u) => u.id !== userId);
   save("users");
 
-  return { ok: true, request, user: snapshot, tombstone };
+  return { ok: true, request, user: snapshot, tombstone, emptiedGroups: emptiedTitles, appointed };
 }
 
 function applyMePatch(user, body) {

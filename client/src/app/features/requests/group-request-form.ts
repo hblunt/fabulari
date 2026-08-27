@@ -11,7 +11,7 @@ import { HlmDialogClose, HlmDialogDescription, HlmDialogFooter, HlmDialogHeader,
 import { HlmInput } from '@spartan-ng/helm/input';
 import { HlmLabel } from '@spartan-ng/helm/label';
 import { HlmTextarea } from '@spartan-ng/helm/textarea';
-import { GROUP_THEMES, type GroupTheme } from '../../core/models';
+import { GROUP_THEMES, themeLabel, type GroupTheme } from '../../core/models';
 import { NotificationService } from '../../core/services/notification-service';
 import { RequestService } from '../../core/services/request-service';
 
@@ -59,14 +59,19 @@ import { RequestService } from '../../core/services/request-service';
           @for (theme of themes; track theme) {
             <button
               type="button"
-              class="size-8 rounded-md ring-offset-background"
-              [ngClass]="'theme-' + theme"
-              [class.ring-2]="form.controls.theme.value === theme"
-              [class.ring-foreground]="form.controls.theme.value === theme"
-              [style.background]="'var(--primary)'"
+              class="flex flex-col items-center gap-1"
               (click)="form.controls.theme.setValue(theme)"
-              [attr.aria-label]="theme"
-            ></button>
+              [attr.aria-label]="themeLabel(theme)"
+            >
+              <span
+                class="size-8 rounded-md ring-offset-background"
+                [ngClass]="'theme-' + theme"
+                [class.ring-2]="form.controls.theme.value === theme"
+                [class.ring-foreground]="form.controls.theme.value === theme"
+                [style.background]="'var(--primary)'"
+              ></span>
+              <span class="text-xs text-muted-foreground">{{ themeLabel(theme) }}</span>
+            </button>
           }
         </div>
         <p class="text-xs text-muted-foreground">Presets only — contrast is guaranteed across all themes.</p>
@@ -92,6 +97,7 @@ export class GroupRequestForm {
   private readonly fb = inject(FormBuilder);
 
   protected readonly themes = GROUP_THEMES;
+  protected readonly themeLabel = themeLabel;
   protected readonly isSubmitting = signal(false);
 
   protected readonly form = this.fb.nonNullable.group({

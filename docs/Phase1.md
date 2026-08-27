@@ -9,9 +9,9 @@
 
 ## 1. Project Overview
 
-Fabulari is a full-stack chat application built on the MEAN stack — MongoDB,
-Express, Angular 20+ and Node.js — with socket.io providing real-time
-communication. Users register, join groups, and hold text and image
+Fabulari is a full-stack chat application built on the MEAN stack (MongoDB,
+Express, Angular 20+ and Node.js) with socket.io providing real-time
+communication. Users login/register, join groups, and hold text and image
 conversations in the rooms those groups contain.
 
 Groups are self-contained communities with their own membership, theme and
@@ -41,8 +41,6 @@ fabulari/
 └── .gitignore
 ```
 
-The teaching staff member is added as a collaborator.
-
 Not committed: `node_modules/`, build output (`dist/`,
 `.angular/cache/`) and `server/uploads/`, which holds user-generated content
 rather than source.
@@ -53,9 +51,7 @@ Trunk-based with short-lived feature branches. `main` stays in a working state,
 and each slice of implementation work is developed on a branch and merged back
 through a pull request.
 
-Documentation and storyboards are committed directly to `main`. They carry no
-merge risk and were written before implementation began, so branching them adds
-process without benefit.
+Initial documentation and storyboards are committed directly to `main`. 
 
 | Branch | Scope |
 |---|---|
@@ -69,18 +65,13 @@ process without benefit.
 Branch names follow `type/short-description`, using the same type prefixes as
 commit messages.
 
-`feat/requests` precedes groups and rooms because group creation, joining and
-room creation all run through the request flow. Building groups first would mean
-stubbing approval and returning to it.
 
 ### Pull requests
 
 Each branch merges through a pull request, which records what changed and why
 and gives a reviewable diff before it reaches `main`.
 
-Pull requests are merged with a merge commit rather than a squash, so the
-individual commits on each branch survive in the history rather than collapsing
-into one.
+Pull requests are merged with a merge commit so history persists on `main`.
 
 ### Commit conventions
 
@@ -124,21 +115,16 @@ fix(auth): clear local storage on logout
 
 ### Commit frequency
 
-Commits are made per completed unit of work — something describable in one
-sentence that leaves the project in a working state. Work is pushed at the end
-of every working session, so the history shows sustained progress across the
-development period rather than a burst near the deadline.
+Commits are made in sub-units within the planned branches listed above. 
 
 ### Releases
 
 Each phase is tagged on `main` at submission: `v1.0.0-phase1` and
-`v2.0.0-phase2`. Tagging fixes an unambiguous submission point so later work
-cannot obscure what was submitted for each phase.
+`v2.0.0-phase2`. 
 
 ## 3. Specifications & Assumptions
 
-Requirements below cover the full application. Section 8 lists what is actually
-built for Phase 1.
+Requirements below cover the full application. 
 
 ### System initialisation
 
@@ -218,7 +204,7 @@ built for Phase 1.
 | Ban visibility | Group admins can see both the current members and the banned users for their groups. |
 | System-wide ban | A group admin submits a request to the super admin to ban a user from the platform entirely. |
 | Effect of a system ban | The super admin performs a hard delete of the account. The email address can never be registered again. |
-| Admin protection | A user who is a group admin cannot be deleted until a replacement admin has been assigned to each of their groups. |
+| Admin protection | Deleting a user who is a group's sole admin automatically promotes a replacement admin from the remaining members. A group left with no members is deleted. |
 | No direct escalation | Regular users cannot contact the super admin. All escalation runs through a group admin. |
 
 ### Requests
@@ -253,7 +239,7 @@ built for Phase 1.
 
 ### Extensions
 
-Not required, implemented only if time permits: message markup, user-level page
+Not required, implemented if time permits: message markup, user-level page
 theming, and a link on the profile page to basic instructions for using the app.
 
 ### Assumptions
@@ -275,6 +261,9 @@ theming, and a link on the profile page to basic instructions for using the app.
     snapshot of the actor's name and email rather than a reference, so history survives.
 13. Users and administrators can filter their request views by type.
 14. Group colour themes are chosen from a fixed set of preset palettes.
+15. When a deleted user was a group's only admin, the remaining member who
+    comes first alphabetically (by last name, then first name) is automatically
+    promoted to admin in their place.
 
 ### Permissions matrix
 
@@ -318,14 +307,6 @@ A **message** belongs to exactly one room and has exactly one author. A
 actioning administrator. An **audit entry** belongs to no entity. Snapshots are stored so it survives deletion of the records it
 describes.
 
-```
-User ── < membership > ── Group ── < Room ── < Message
-                          │                  │
-                          └── theme          └── author (User)
-
-Request ── submittedBy (User) ── target (Group | Room | User)
-AuditEntry ── (snapshots only, no references)
-```
 
 ### Identifiers
 
@@ -399,7 +380,7 @@ scanning every group.
 }
 ```
 
-Membership is held as three ID arrays for fast lookups and changes. The only per-user state a group carries is whether they are an admin
+Membership is held as three ID arrays for fast lookups and changes (`members`, `admins`, and `bannedUsers`). The only per-user state a group carries is whether they are an admin
 and whether they are banned, and both are expressed directly by which array the
 ID sits in. Admins are also listed in `members`.
 
@@ -555,14 +536,13 @@ accounts. Deletion cascades, stripping the user's ID from every group's
   "actorName": "System Administrator",
   "actorEmail": "admin@example.com",
   "targetLabel": "Group: Board Games",
-  "detail": "Deletion requested by Holly Bennett.",
+  "detail": "Deletion requested by Holly Blunt.",
   "timestamp": "2026-08-23T21:10:00.000Z"
 }
 ```
 
 Audit entries store snapshots rather than IDs. If they held references, deleting
-a user would blank out their history in the very log the super admin is meant to
-review.
+a user would blank out their history in the log.
 
 ### Server-side persistence
 
@@ -588,19 +568,7 @@ is stored on the user record.
 ### Client-side storage
 
 On successful login the client writes a single `currentUser` key to browser local
-storage, holding the authenticated user without the password hash:
-
-```json
-{
-  "id": "u-8f14e45f",
-  "email": "holly@example.com",
-  "firstName": "Holly",
-  "lastName": "Blunt",
-  "role": "USER",
-  "profilePicture": "u-8f14e45f-avatar.png",
-  "groups": ["g-c9f0f895", "g-45c48cce"]
-}
-```
+storage, holding the authenticated user without the password hash.
 
 This key is read on application start to restore the session and to drive route
 guards and conditional UI, and is removed on logout.
@@ -621,8 +589,7 @@ the only server-side message state, and it exists solely to give a joining user
 context.
 
 **Socket presence.** Who is currently in each room is held as a map of room ID to
-a set of user IDs, giving constant-time join, leave and membership checks. It is
-not persisted because presence is meaningless across a server restart since every socket connection is severed anyway.
+a set of user IDs, giving constant-time join, leave and membership checks.
 
 **Client message history.** Messages are stored keyed by room ID and then by
 message ID, rather than as one flat list. Opening a room reads only that room's
@@ -640,25 +607,15 @@ benefit.
 
 ### Approach
 
-The application is built with Angular 20 using **standalone components**. There
-is no `AppModule`; the application is bootstrapped from `main.ts` with
-`bootstrapApplication`, and each component declares its own `imports`. This is
-the default the Angular CLI generates in version 20 and the direction the
-framework has taken since NgModules were made optional.
-
-The interface uses a **single application shell**. Rather than a separate layout
-per role, one shell hosts the navigation and router outlet, and navigation items
-are shown or hidden according to the signed-in user's role and their admin
-status within the group being viewed.
+Standalone components, bootstrapped from `main.ts`. One shell hosts the nav and
+router outlet; items appear or hide from the signed-in role, and from group-admin
+status on a group page.
 
 ### State management
 
-State is held in **signals**; **observables** are used for asynchronous events.
-
-A signal holds a current value and notifies readers when it changes, which suits
-things like the signed-in user, the group list, or the occupants of a room.
-Observables represent values arriving over time, which suits `HttpClient`
-responses and incoming socket events.
+**Signals** hold current UI state (session, lists, presence). The session
+signal lives in `AuthService`; each page owns the signals behind its own view.
+**Observables** are only for HTTP, and for socket events in Phase 2.
 
 
 ### Libraries
@@ -692,7 +649,7 @@ client/src/app/
 ```
 
 `core` holds things instantiated once for the lifetime of the application,
-`shared` holds presentational components with no service dependencies, and
+`shared` holds components reused across features, and
 `features` holds one folder per area of the application, matching the route
 structure.
 
@@ -707,10 +664,9 @@ structure.
 | `App` | Root shell. Hosts the navigation bar, the router outlet and the notification host |
 | `NavBar` | Primary navigation. Shows or hides destinations based on the signed-in user's role |
 | `NotificationHost` | Renders transient in-application notifications raised by any service |
-| `UserAvatar` | Displays a user's profile picture, or their initials where none is set |
-| `ConfirmDialog` | Generic confirmation prompt for destructive actions |
-| `ReasonDialog` | Captures the mandatory reason when an administrator rejects a request |
-| `EmptyState` | Consistent placeholder for empty lists |
+| `NotFoundPage` | Catch-all view for unknown routes |
+| `BrandMark` | Application logo, sized for the nav bar or the auth screens |
+| `CountBadge` | Small count displayed beside section headings |
 
 #### Authentication
 
@@ -738,6 +694,8 @@ structure.
 | `GroupMemberList` | The group's full membership, sorted alphabetically |
 | `GroupSettingsForm` | Admin editing of title, description, age limit and theme |
 | `GroupBanList` | Users banned from the group, visible to group admins |
+| `RoomEditForm` | Admin editing of an existing room's name and description |
+| `ConsequenceDialog` | Names the members who will be removed before an admin commits an age limit raise |
 
 #### Rooms and chat
 
@@ -760,6 +718,8 @@ structure.
 | `GroupRequestForm` | Captures title, description, age limit and theme for a group creation request |
 | `RoomRequestForm` | Captures name and description for a room creation request |
 | `ReportUserForm` | Reports a user to the administrators of a shared group |
+| `ConfirmDialog` | Generic confirmation prompt for destructive actions |
+| `ReasonDialog` | Captures the mandatory reason when an administrator rejects a request |
 
 #### Super admin
 
@@ -780,7 +740,7 @@ request queue, the user list, banned accounts and the audit log.
 |---|---|
 | `AuthService` | Bootstrap check, registration, login and logout. Owns the `currentUser` signal and reads and writes the local storage key |
 | `UserService` | Profile reads and updates, password changes, the administrative user list and user deletion |
-| `GroupService` | Group reads and updates, membership changes, admin promotion and demotion, and group bans. Owns the signals backing the group and membership views |
+| `GroupService` | Group reads and updates, membership changes, admin promotion and demotion, and group bans |
 | `RoomService` | Room reads, updates and deletion within a group |
 | `RequestService` | Creating requests and reports, listing them scoped to the caller, and the approve and reject actions |
 | `AuditService` | Retrieves audit entries with type and date filters |
@@ -830,10 +790,6 @@ any string:
 | `MessageType` | `TEXT`, `IMAGE` |
 | `GroupTheme` | The keys of the preset colour palettes |
 
-The request model is named `AppRequest` rather than `Request` because `Request`
-is a built-in browser type, and shadowing it in a project that also uses
-`HttpClient` invites confusion.
-
 ---
 
 ### Routes
@@ -870,45 +826,31 @@ The default route redirects to `/groups` when signed in and `/login` otherwise.
 | `groupMemberGuard` | Requires membership of the group named in the route parameter, covering the room routes beneath it |
 
 Guards control navigation only. Every permission they enforce is also checked on
-the server, because a guard is a usability measure rather than a security one:
-it prevents a user reaching a screen they cannot use, but it does not prevent
+the server since they only prevent a user reaching a screen they cannot use, but they do not prevent
 anyone calling the API directly.
 
 ## 6. Server-side Endpoints
 
-All routes are prefixed `/api`. Requests and responses are JSON. The **Phase**
-column indicates whether the route is implemented for Phase 1 or defined now and
-implemented in Phase 2.
+All routes are prefixed `/api`. Requests and responses are JSON. 
 
 ### Conventions
 
-**Caller identification.** Phase 1 has no token-based authentication. After
-login the client sends the authenticated user's ID in an `X-User-Id` header on
-every subsequent request. A single middleware resolves this to the user record
-and attaches it to the request, and route handlers check the caller's role and
-group membership before acting.
+**Caller.** Phase 1 sends `X-User-Id` after login. Middleware attaches the user;
+handlers check role and membership. The header is forgeable — it exists so
+permission lives on the server, and so Phase 2 can swap it for a token.
 
-This identifies the caller, it does not secure the endpoint — the header is
-trivially forged. It exists so that permission rules live on the server rather
-than only in Angular route guards, and so that Phase 2 can replace the header
-with a signed token without restructuring any handler.
-
-**Errors.** Failures return an appropriate status code with
-`{ "error": "<message>" }`.
+**Errors.** `{ "error": "<message>" }` with:
 
 | Status | Meaning |
 |---|---|
-| 400 | Validation failure, such as a missing rejection reason or a weak password |
-| 401 | No caller identified, or invalid login credentials |
-| 403 | Caller identified but not permitted to perform the action |
-| 404 | Entity does not exist |
-| 409 | Conflict, such as an email already registered or blacklisted |
+| 400 | Validation failed |
+| 401 | No caller, or bad credentials |
+| 403 | Caller not permitted |
+| 404 | Not found |
+| 409 | Conflict (e.g. email taken or blacklisted) |
 
-**Approve and reject.** Every workflow in the application follows a request and
-decision pattern. Rather than editing a request's status field, decisions are
-made through named action routes, because approving a request has side effects
-beyond the request itself: approving a `GROUP_CREATE` creates the group, assigns
-its first admin and writes an audit entry.
+**Approve / reject.** Named action routes, not a status PATCH. Approval has
+side effects (create the group, appoint the first admin, write audit).
 
 **Password hashes** are never returned by any endpoint.
 
@@ -916,166 +858,141 @@ its first admin and writes an audit entry.
 
 ### Bootstrap
 
-| Method | Route | Body / Params | Returns | Permitted | Phase |
-|---|---|---|---|---|---|
-| GET | `/api/bootstrap` | — | `{ required: boolean }` | Anyone | 1 |
-| POST | `/api/bootstrap` | `{ firstName, lastName, age, email, password }` | `201` `{ user }` | Anyone, only while no users exist | 1 |
+| Method | Route | Body / Params | Returns | Permitted |
+|---|---|---|---|---|
+| GET | `/api/bootstrap` | — | `{ required: boolean }` | Anyone |
+| POST | `/api/bootstrap` | `{ firstName, lastName, age, email, password }` | `201` `{ user }` | Anyone, only while no users exist |
 
-`GET` tells the client whether to show the onboarding screen. `POST` creates the
-single super admin and returns `409` on any subsequent call.
+`GET` is whether onboarding is needed. `POST` creates the super admin; later
+calls return `409`.
 
 ### Authentication
 
-| Method | Route | Body / Params | Returns | Permitted | Phase |
-|---|---|---|---|---|---|
-| POST | `/api/auth/register` | `{ firstName, lastName, age, email, password }` | `201` `{ user }` | Anyone | 1 |
-| POST | `/api/auth/login` | `{ email, password }` | `{ user }` | Anyone | 1 |
+| Method | Route | Body / Params | Returns | Permitted |
+|---|---|---|---|---|
+| POST | `/api/auth/register` | `{ firstName, lastName, age, email, password }` | `201` `{ user }` | Anyone |
+| POST | `/api/auth/login` | `{ email, password }` | `{ user }` | Anyone |
 
-Registration returns `409` if the email is already in use or present in the
-banned accounts list, and `400` if the password fails the complexity rules.
-Login returns the user object the client stores in local storage.
+Register: `409` if the email is taken or banned, `400` if the password is weak.
+Login returns the session user.
 
 ### Users
 
-| Method | Route | Body / Params | Returns | Permitted | Phase |
-|---|---|---|---|---|---|
-| GET | `/api/users/me` | — | `{ user }` | Authenticated caller | 1 |
-| PATCH | `/api/users/me` | Any of `{ firstName, lastName, age }` | `{ user }` | Authenticated caller | 1 |
-| PATCH | `/api/users/me/password` | `{ currentPassword, newPassword }` | `204` | Authenticated caller | 1 |
-| POST | `/api/users/me/picture` | `multipart/form-data`, image field | `{ profilePicture }` | Authenticated caller | 2 |
-| GET | `/api/users` | Optional `?groupId=` | `{ users: [...] }` | Super admin, or group admin for their own group | 1 |
-| DELETE | `/api/users/:id` | `{ requestId }` | `204` | Super admin | 1 |
+| Method | Route | Body / Params | Returns | Permitted |
+|---|---|---|---|---|
+| GET | `/api/users/me` | — | `{ user }` | Authenticated caller |
+| PATCH | `/api/users/me` | Any of `{ firstName, lastName, age }` | `{ user }` | Authenticated caller |
+| PATCH | `/api/users/me/password` | `{ currentPassword, newPassword }` | `204` | Authenticated caller |
+| POST | `/api/users/me/picture` | `multipart/form-data`, image field | `{ profilePicture }` | Authenticated caller |
+| GET | `/api/users` | Optional `?groupId=` | `{ users: [...] }` | Super admin, or group admin for their own group |
+| DELETE | `/api/users/:id` | `{ requestId }` | `204` | Super admin |
 
-Email cannot be changed, so it is rejected if present in the `PATCH` body.
-`DELETE` requires an approved `SYSTEM_BAN` request, writes the tombstone record,
-cascades the removal through every group's member, admin and banned lists, and
-fails with `409` if the user is the sole admin of any group.
+`PATCH` rejects email. Picture upload is Phase 2. `DELETE` needs an approved
+`SYSTEM_BAN`; writes the tombstone and strips the user from every group. An
+empty group is deleted; a sole admin with remaining members is succeeded.
 
 ### Banned accounts
 
-| Method | Route | Body / Params | Returns | Permitted | Phase |
-|---|---|---|---|---|---|
-| GET | `/api/banned-accounts` | — | `{ bannedAccounts: [...] }` | Super admin | 1 |
+| Method | Route | Body / Params | Returns | Permitted |
+|---|---|---|---|---|
+| GET | `/api/banned-accounts` | — | `{ bannedAccounts: [...] }` | Super admin |
 
 ### Groups
 
-| Method | Route | Body / Params | Returns | Permitted | Phase |
-|---|---|---|---|---|---|
-| GET | `/api/groups` | — | `{ groups: [...] }` | Any authenticated user | 1 |
-| GET | `/api/groups/:id` | — | `{ group }` | Members and admins of the group, or super admin | 1 |
-| PATCH | `/api/groups/:id` | Any of `{ title, description, ageLimit, theme }` | `{ group, removedMembers }` | Group admin | 1 |
-| DELETE | `/api/groups/:id` | `{ requestId }` | `204` | Super admin | 1 |
+| Method | Route | Body / Params | Returns | Permitted |
+|---|---|---|---|---|
+| GET | `/api/groups` | — | `{ groups: [...] }` | Any authenticated user |
+| GET | `/api/groups/:id` | — | `{ group }` | Members and admins of the group, or super admin |
+| PATCH | `/api/groups/:id` | Any of `{ title, description, ageLimit, theme }` | `{ group, removedMembers }` | Group admin |
+| DELETE | `/api/groups/:id` | `{ requestId }` | `204` | Super admin |
 
-The group list is visible to everyone so users can browse and request to join,
-and returns only public fields: title, description, age limit and member count.
-
-Raising `ageLimit` removes members who now fall below it; the response reports
-which users were removed so the client can confirm the effect. There is no
-`POST /api/groups` — groups are only created by approving a `GROUP_CREATE`
-request. Deletion requires an approved `GROUP_DELETE` request: approval
-permits the deletion, and `DELETE /api/groups/:id` performs it, cascading
-to the group's rooms, messages and outstanding requests. This is the same
-split as `SYSTEM_BAN` and `DELETE /api/users/:id`.
+List is public fields (title, description, age limit, member count) so anyone
+can browse and request to join. No `POST` — created by approving `GROUP_CREATE`.
+Raising `ageLimit` returns who was removed. `DELETE` needs an approved
+`GROUP_DELETE` and cascades rooms, messages and outstanding requests.
 
 ### Group membership
 
-| Method | Route | Body / Params | Returns | Permitted | Phase |
-|---|---|---|---|---|---|
-| GET | `/api/groups/:id/members` | — | `{ members: [...] }` | Group admin | 1 |
-| DELETE | `/api/groups/:id/members/:userId` | — | `204` | Group admin, or the user themselves to leave | 1 |
-| POST | `/api/groups/:id/admins/:userId` | — | `204` | Group admin | 1 |
-| DELETE | `/api/groups/:id/admins/:userId` | — | `204` | Group admin, including on themselves | 1 |
-| GET | `/api/groups/:id/bans` | — | `{ bannedUsers: [...] }` | Group admin | 1 |
-| POST | `/api/groups/:id/bans/:userId` | `{ requestId }` | `204` | Group admin | 1 |
+| Method | Route | Body / Params | Returns | Permitted |
+|---|---|---|---|---|
+| GET | `/api/groups/:id/members` | — | `{ members: [...] }` | Group admin |
+| DELETE | `/api/groups/:id/members/:userId` | — | `204` | Group admin, or the user themselves to leave |
+| POST | `/api/groups/:id/admins/:userId` | — | `204` | Group admin |
+| DELETE | `/api/groups/:id/admins/:userId` | — | `204` | Group admin, including on themselves |
+| GET | `/api/groups/:id/bans` | — | `{ bannedUsers: [...] }` | Group admin |
+| POST | `/api/groups/:id/bans/:userId` | `{ requestId }` | `204` | Group admin |
 
-Members are added only by approving a `GROUP_JOIN` request, so there is no
-`POST` on the members collection. Promotion requires the target to be an
-existing member. Both demotion and leaving return `409` if the action would
-leave the group without an admin. Banning requires a `USER_REPORT` that the
-acting admin did not submit, removes the user from the group, and adds them to
-`bannedUsers`.
+No `POST` on members — join is `GROUP_JOIN`. Promote only existing members.
+Leave or demote returns `409` if it would leave no admin. Ban needs a
+`USER_REPORT` the acting admin did not submit.
 
 ### Rooms
 
-| Method | Route | Body / Params | Returns | Permitted | Phase |
-|---|---|---|---|---|---|
-| GET | `/api/groups/:groupId/rooms` | — | `{ rooms: [...] }` | Members and admins of the group | 1 |
-| GET | `/api/rooms/:id` | — | `{ room }` | Members and admins of the owning group | 1 |
-| PATCH | `/api/rooms/:id` | Any of `{ name, description }` | `{ room }` | Group admin | 1 |
-| DELETE | `/api/rooms/:id` | — | `204` | Group admin | 1 |
+| Method | Route | Body / Params | Returns | Permitted |
+|---|---|---|---|---|
+| GET | `/api/groups/:groupId/rooms` | — | `{ rooms: [...] }` | Members and admins of the group |
+| POST | `/api/groups/:groupId/rooms` | `{ name, description }` | `201` `{ room }` | Group admin |
+| GET | `/api/rooms/:id` | — | `{ room }` | Members and admins of the owning group |
+| PATCH | `/api/rooms/:id` | Any of `{ name, description }` | `{ room }` | Group admin |
+| DELETE | `/api/rooms/:id` | — | `204` | Group admin |
 
-Rooms are listed and created under their group, since a room only exists within
-one, but are addressed directly by ID for everything else because the room ID is
-already unique. Rooms are created by approving a `ROOM_CREATE` request, so there
-is no direct `POST`.
+Listed and created under the group; addressed by ID after that. Admins create
+directly. Members propose `ROOM_CREATE`.
 
 ### Requests and reports
 
-| Method | Route | Body / Params | Returns | Permitted | Phase |
-|---|---|---|---|---|---|
-| GET | `/api/requests` | Optional `?type=` and `?status=` | `{ requests: [...] }` | Scoped to the caller, see below | 1 |
-| GET | `/api/requests/:id` | — | `{ request }` | Submitter or the actioning administrator | 1 |
-| POST | `/api/requests` | `{ type, targetId?, payload?, reason? }` | `201` `{ request }` | Varies by type | 1 |
-| POST | `/api/requests/:id/approve` | — | `{ request, created? }` | Super admin or group admin, by type | 1 |
-| POST | `/api/requests/:id/reject` | `{ reason }` | `{ request }` | Super admin or group admin, by type | 1 |
+| Method | Route | Body / Params | Returns | Permitted |
+|---|---|---|---|---|
+| GET | `/api/requests` | Optional `?type=` and `?status=` | `{ requests: [...] }` | Scoped to the caller, see below |
+| GET | `/api/requests/:id` | — | `{ request }` | Submitter or the actioning administrator |
+| POST | `/api/requests` | `{ type, targetId?, payload?, reason? }` | `201` `{ request }` | Varies by type |
+| POST | `/api/requests/:id/approve` | — | `{ request, created? }` | Super admin or group admin, by type |
+| POST | `/api/requests/:id/reject` | `{ reason }` | `{ request }` | Super admin or group admin, by type |
 
-All request and report types share one collection and one set of routes,
-distinguished by `type`. The list endpoint is scoped by role: a regular user
-receives their own submissions, a group admin additionally receives pending
-requests targeting their groups, and the super admin receives all
-`GROUP_CREATE`, `GROUP_DELETE` and `SYSTEM_BAN` requests. Both filters can be
-combined so each view is a single query.
+One collection, distinguished by `type`. List is scoped: own submissions; group
+admins also see pending for their groups; super admin sees `GROUP_CREATE`,
+`GROUP_DELETE` and `SYSTEM_BAN`.
 
-Creation validates the payload against the type and returns `400` if required
-fields are missing, `403` if the caller is not permitted to raise that type, and
-`409` if an equivalent request is already pending. Requests cannot be withdrawn,
-so there is no `DELETE`.
-
-Rejection requires a reason and returns `400` without one. Both decisions return
-`403` if the caller submitted the request themselves, and `409` if it has already
-been actioned. Approval performs the type's side effects and returns the created
-entity where one results:
+Create: `400` missing fields, `403` not allowed to raise that type, `409`
+duplicate pending. No withdraw. Reject needs a reason. Cannot action your own
+request, or one already decided.
 
 | Type | Approved by | Effect of approval |
 |---|---|---|
-| `GROUP_CREATE` | Super admin | Creates the group and makes the submitter its first admin |
+| `GROUP_CREATE` | Super admin | Creates the group; submitter is first admin |
 | `GROUP_DELETE` | Super admin | Permits the group to be deleted |
-| `GROUP_JOIN` | Group admin | Adds the submitter to the group's members |
-| `ROOM_CREATE` | Group admin | Creates the room within the group |
-| `USER_REPORT` | Group admin | Permits the reported user to be banned from the group |
-| `SYSTEM_BAN` | Super admin | Permits the user to be deleted from the system |
+| `GROUP_JOIN` | Group admin | Adds the submitter to the group |
+| `ROOM_CREATE` | Group admin | Creates the room |
+| `USER_REPORT` | Group admin | Permits a group ban |
+| `SYSTEM_BAN` | Super admin | Permits system deletion |
 
-`GROUP_JOIN` is rejected automatically at creation, without reaching an admin, if
-the submitter's age is below the group's age limit.
+`GROUP_JOIN` auto-rejects at create if the submitter is under the age limit.
 
 ### Audit log
 
-| Method | Route | Body / Params | Returns | Permitted | Phase |
-|---|---|---|---|---|---|
-| GET | `/api/audit` | Optional `?type=`, `?from=`, `?to=` | `{ entries: [...] }` | Super admin | 1 |
+| Method | Route | Body / Params | Returns | Permitted |
+|---|---|---|---|---|
+| GET | `/api/audit` | Optional `?type=`, `?from=`, `?to=` | `{ entries: [...] }` | Super admin |
 
-Entries are returned in date order and can be filtered by action type and date
-range. There is no write endpoint; entries are written server-side as a side
-effect of the actions they record.
+Date order, optional type and date filters. No write endpoint — entries are a
+side effect of the actions they record.
 
 ### Messages
 
-| Method | Route | Body / Params | Returns | Permitted | Phase |
-|---|---|---|---|---|---|
-| GET | `/api/rooms/:id/messages` | — | `{ messages: [...] }` | Members of the owning group | 2 |
-| POST | `/api/rooms/:id/images` | `multipart/form-data`, image field | `201` `{ filename }` | Members of the owning group | 2 |
+Phase 2.
 
-`GET` returns at most the five most recent messages the server retains. Everything after that
-arrives over sockets rather than HTTP.
+| Method | Route | Body / Params | Returns | Permitted |
+|---|---|---|---|---|
+| GET | `/api/rooms/:id/messages` | — | `{ messages: [...] }` | Members of the owning group |
+| POST | `/api/rooms/:id/images` | `multipart/form-data`, image field | `201` `{ filename }` | Members of the owning group |
 
-Image uploads use HTTP rather than sockets because of the 2MB payload. The
-returned filename is then sent as the content of an `IMAGE` message over the
-socket connection.
+`GET` returns at most the five messages the server keeps; the rest arrive over
+sockets. Images go over HTTP because of the 2MB payload; the filename is then
+sent as an `IMAGE` socket message.
 
 ### Socket events
 
-Real-time communication is handled by socket.io rather than REST. The events are
-listed here for completeness and will be implemented in Phase 2.
+Phase 2. socket.io, not REST.
 
 | Direction | Event | Payload | Purpose |
 |---|---|---|---|
@@ -1192,18 +1109,11 @@ consistency without a judgement call on every element.
 
 ### Responsive strategy
 
-The application targets **desktop and tablet**. Mobile support was ruled out by
-the client, so the layout is designed desktop-first and adapts down.
+The application targets desktops and tablets. 
 
-Tailwind's default breakpoints are used unchanged:
-
-| Breakpoint | Width | Layout |
-|---|---|---|
-| `md` | ≥ 768px | Tablet. Two regions; supporting panels become toggles |
-| `lg` | ≥ 1024px | Desktop. Three regions, all panels visible |
-| `xl` | ≥ 1280px | Content width capped, additional gutter |
-
-Below 768px the layout holds at its tablet arrangement.
+Tablet is Tailwind `md` (768px): two regions, supporting panels become toggles.
+Desktop is `lg` (1024px): three regions, all panels visible. Below 768px the
+layout stays at the tablet arrangement.
 
 | Region | Desktop | Tablet |
 |---|---|---|
@@ -1219,10 +1129,11 @@ changed, so no custom media queries are needed.
 ### Storyboard flow
 
 Design documents were produced before implementation began and live in
-[`docs/storyboards/`](docs/storyboards), as PNG for viewing and SVG for editing.
-The map sequences every frame; numbers match the filenames.
+[`docs/storyboards/`](docs/storyboards).
+The map sequences every frame; numbers match the filenames. ***See docs/storyboards/fabulari_storyboard_flow.svg***
 
-***See docs/storyboards/fabulari_storyboard_flow.svg***
+Who submits, who actions, and what approval creates:
+***See docs/storyboards/fabulari_request_lifecycle.svg***
 
 *Frames
 05 and 06 are the same route. A member who administers the group sees the admin
@@ -1245,36 +1156,16 @@ path leads from the super admin branch into a group or room.
 | 10 | [Request queue](docs/storyboards/wf-10-request-queue.png) | Join, room and report requests for the groups an admin runs. |
 | 11 | [Profile](docs/storyboards/wf-11-profile.png) | Editable details, read-only email, password change, picture upload. |
 | 12 | [Super admin requests](docs/storyboards/wf-12-admin-requests.png) | Group creation, deletion and system bans. Same component as 10. |
-| 13 | [User administration](docs/storyboards/wf-13-admin-users.png) | Every account. Deletion blocked while a user is the sole admin of a group. |
+| 13 | [User administration](docs/storyboards/wf-13-admin-users.png) | Every account. Deleting a sole group admin automatically appoints a successor. |
 | 14 | [Banned accounts](docs/storyboards/wf-14-banned-accounts.png) | Tombstone records retaining the email so it cannot be reused. |
 | 15 | [Audit log](docs/storyboards/wf-15-audit-log.png) | Administrative actions, filterable by type and date. |
 | 16 | [Dialogs](docs/storyboards/wf-16-dialogs.png) | Four shapes sharing one shell: form, reason, confirm, consequence. |
 
 Each frame carries numbered callouts tying an interface element back to the
-requirement that produced it. These are documentation, not part of the built
-interface.
+requirement that produced it. 
 
 Frames 07 and 08 are the responsive pair: three regions at desktop, one at
 tablet, with the room list and presence panel becoming toggles while the message
 stream keeps its width.
 
 ***See docs/storyboards/wf-07-room-desktop.png and wf-08-room-tablet.png***
-
-### Request lifecycle
-
-Almost every administrative action begins as a request. The six types differ
-only in who submits them, who actions them, and what approval creates.
-
-***See docs/storyboards/fabulari_request_lifecycle.svg***
-
-| Type | Submitted by | Actioned by | Approval creates |
-|---|---|---|---|
-| `GROUP_CREATE` | Any user | Super admin | Group, with the submitter as first admin |
-| `GROUP_DELETE` | Group admin | Super admin | Permission to delete the group and its rooms |
-| `GROUP_JOIN` | Any user | Group admin | Group membership |
-| `ROOM_CREATE` | Group member | Group admin | Room within the group |
-| `USER_REPORT` | Group member | Group admin | Permission to ban from the group |
-| `SYSTEM_BAN` | Group admin | Super admin | Permission to delete the account |
-
-An administrator cannot action a request they submitted themselves, requests
-cannot be withdrawn, and every rejection carries a reason shown to the submitter.

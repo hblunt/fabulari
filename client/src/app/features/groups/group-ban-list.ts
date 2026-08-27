@@ -4,12 +4,11 @@
 
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { HlmAvatar, HlmAvatarFallback } from '@spartan-ng/helm/avatar';
-import { HlmBadge } from '@spartan-ng/helm/badge';
 import type { User } from '../../core/models';
 
 @Component({
   selector: 'app-group-ban-list',
-  imports: [HlmAvatar, HlmAvatarFallback, HlmBadge],
+  imports: [HlmAvatar, HlmAvatarFallback],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h2 class="text-lg font-medium">Banned from this group</h2>
@@ -19,8 +18,7 @@ import type { User } from '../../core/models';
           <hlm-avatar size="sm">
             <span hlmAvatarFallback>{{ user.firstName.charAt(0) }}{{ user.lastName.charAt(0) }}</span>
           </hlm-avatar>
-          <span class="flex-1">{{ user.firstName }} {{ user.lastName }}</span>
-          <span hlmBadge variant="secondary">Permanent</span>
+          <span>{{ user.firstName }} {{ user.lastName }}</span>
         </li>
       } @empty {
         <li class="px-4 py-3 text-sm text-muted-foreground">No one is banned.</li>
