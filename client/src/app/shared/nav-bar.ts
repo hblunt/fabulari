@@ -12,10 +12,11 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { AuthService } from '../core/services/auth-service';
+import { BrandMark } from './brand-mark';
 
 @Component({
   selector: 'app-nav-bar',
-  imports: [RouterLink, RouterLinkActive, HlmButton],
+  imports: [RouterLink, RouterLinkActive, HlmButton, BrandMark],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (user(); as user) {
@@ -31,7 +32,7 @@ import { AuthService } from '../core/services/auth-service';
           >
             Menu
           </button>
-          <span class="font-semibold tracking-tight">Fabulari</span>
+          <app-brand-mark />
 
           <div class="hidden items-center gap-6 lg:flex">
             @if (isSuperAdmin()) {

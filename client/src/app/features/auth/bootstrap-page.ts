@@ -13,17 +13,19 @@ import { HlmInput } from '@spartan-ng/helm/input';
 import { HlmLabel } from '@spartan-ng/helm/label';
 import { AuthService } from '../../core/services/auth-service';
 import { NotificationService } from '../../core/services/notification-service';
+import { BrandMark } from '../../shared/brand-mark';
 
 // Same rule as the server (server/users.js) and RegisterPage.
 const PASSWORD_PATTERN = /^(?=.*[A-Z])(?=.*[0-9])[A-Za-z0-9]{8,}$/;
 
 @Component({
   selector: 'app-bootstrap-page',
-  imports: [ReactiveFormsModule, HlmButton, HlmCardImports, HlmInput, HlmLabel],
+  imports: [ReactiveFormsModule, HlmButton, HlmCardImports, HlmInput, HlmLabel, BrandMark],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex min-h-screen flex-col items-center bg-muted/40 px-4 pt-20">
-      <section hlmCard class="w-full max-w-md">
+    <div class="flex min-h-screen flex-col items-center bg-muted/40 px-4 pt-8 md:pt-10">
+      <app-brand-mark variant="auth" />
+      <section hlmCard class="mt-3 w-full max-w-md md:mt-4">
         <div hlmCardHeader class="text-center">
           <h1 hlmCardTitle class="text-xl">Set up Fabulari</h1>
           <p hlmCardDescription>No users found. Create the super admin account.</p>

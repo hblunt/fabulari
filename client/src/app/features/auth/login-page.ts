@@ -13,16 +13,19 @@ import { HlmInput } from '@spartan-ng/helm/input';
 import { HlmLabel } from '@spartan-ng/helm/label';
 import { AuthService } from '../../core/services/auth-service';
 import { NotificationService } from '../../core/services/notification-service';
+import { BrandMark } from '../../shared/brand-mark';
 
 @Component({
   selector: 'app-login-page',
-  imports: [ReactiveFormsModule, RouterLink, HlmButton, HlmCardImports, HlmInput, HlmLabel],
+  imports: [ReactiveFormsModule, RouterLink, HlmButton, HlmCardImports, HlmInput, HlmLabel, BrandMark],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex min-h-screen flex-col items-center bg-muted/40 px-4 pt-20">
-      <h1 class="text-3xl font-bold tracking-tight">Fabulari</h1>
+    <div class="flex min-h-screen flex-col items-center bg-muted/40 px-4 pt-16 md:pt-20">
+      <h1 class="mb-3 md:mb-4">
+        <app-brand-mark variant="auth" />
+      </h1>
 
-      <section hlmCard class="mt-10 w-full max-w-sm">
+      <section hlmCard class="w-full max-w-sm">
         <div hlmCardHeader>
           <h2 hlmCardTitle class="text-center text-xl">Sign in</h2>
         </div>

@@ -14,6 +14,7 @@ import { HlmInput } from '@spartan-ng/helm/input';
 import { HlmLabel } from '@spartan-ng/helm/label';
 import { AuthService } from '../../core/services/auth-service';
 import { NotificationService } from '../../core/services/notification-service';
+import { BrandMark } from '../../shared/brand-mark';
 
 // Mirror of the server rule (server/users.js): 8+ characters, letters and
 // digits only, at least one uppercase and one digit. Client-side validation
@@ -22,13 +23,15 @@ const PASSWORD_PATTERN = /^(?=.*[A-Z])(?=.*[0-9])[A-Za-z0-9]{8,}$/;
 
 @Component({
   selector: 'app-register-page',
-  imports: [ReactiveFormsModule, RouterLink, HlmButton, HlmCardImports, HlmInput, HlmLabel],
+  imports: [ReactiveFormsModule, RouterLink, HlmButton, HlmCardImports, HlmInput, HlmLabel, BrandMark],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex min-h-screen flex-col items-center bg-muted/40 px-4 pt-20">
-      <h1 class="text-3xl font-bold tracking-tight">Fabulari</h1>
+    <div class="flex min-h-screen flex-col items-center bg-muted/40 px-4 pt-8 md:pt-10">
+      <h1 class="mb-3 md:mb-4">
+        <app-brand-mark variant="auth" />
+      </h1>
 
-      <section hlmCard class="mt-10 w-full max-w-md">
+      <section hlmCard class="w-full max-w-md">
         <div hlmCardHeader>
           <h2 hlmCardTitle class="text-center text-xl">Create an account</h2>
         </div>
