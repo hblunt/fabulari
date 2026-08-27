@@ -10,6 +10,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
   selector: 'app-profile-picture-upload',
   imports: [HlmAvatar, HlmAvatarFallback, HlmButton],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'block' },
   template: `
     <div class="rounded-xl border p-4">
       <h2 class="font-medium">Profile picture</h2>

@@ -1,5 +1,5 @@
 // client/src/app/shared/brand-mark.ts
-// PNG lockup. Two sizes so the nav bar stays h-14 and the auth screens can
+// PNG lockup. Two sizes so the nav bar stays h-16 and the auth screens can
 // show the full stacked mark without inventing widths per page.
 
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
@@ -14,7 +14,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       [class]="
         variant() === 'auth'
           ? 'block h-28 w-auto object-contain md:h-36'
-          : 'block h-8 w-auto shrink-0 object-contain lg:h-9'
+          : 'block h-10 w-auto shrink-0 object-contain lg:h-11'
       "
     />
   `,

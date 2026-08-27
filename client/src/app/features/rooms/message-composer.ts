@@ -43,7 +43,7 @@ export interface ComposerSend {
         <button hlmBtn variant="outline" type="button" (click)="fileInput.click()">+</button>
         <button hlmBtn type="submit" [disabled]="!draft().trim()">Send</button>
       </div>
-      <p class="text-xs text-muted-foreground">PNG, JPEG or GIF · 2MB maximum · no video or voice</p>
+      <p class="text-xs text-muted-foreground">PNG, JPEG or GIF · 2MB maximum</p>
     </form>
   `,
 })

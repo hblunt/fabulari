@@ -24,24 +24,29 @@ import { RoomPresenceList } from './room-presence-list';
   template: `
     @if (group(); as group) {
       <section
-        class="flex h-[calc(100vh-3.5rem)] flex-col overflow-hidden"
+        class="flex h-[calc(100vh-4rem)] flex-col overflow-hidden px-10 pb-6 pt-3"
         [ngClass]="'theme-' + group.theme"
       >
-        <div class="flex items-center gap-2 border-b px-4 py-2 lg:hidden">
-          <div class="min-w-0 flex-1">
-            <p class="font-medium"># {{ room()?.name }}</p>
-            <p class="text-xs text-muted-foreground">{{ group.title }}</p>
-          </div>
+        <p class="mb-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+          <a routerLink="/groups" class="hover:underline">Groups</a>
+          <span>/</span>
+          <a [routerLink]="['/groups', group.id]" class="hover:underline">{{ group.title }}</a>
+          <span>/</span>
+          <span># {{ room()?.name }}</span>
+        </p>
+
+        <div class="mb-3 flex items-center gap-2 lg:hidden">
+          <p class="min-w-0 flex-1 font-medium"># {{ room()?.name }}</p>
           <button hlmBtn variant="outline" size="sm" type="button" (click)="toggleRooms()">Rooms ▼</button>
           <button hlmBtn variant="outline" size="sm" type="button" (click)="togglePresence()">
             In room {{ presence.length }}
           </button>
         </div>
 
-        <div class="relative flex min-h-0 flex-1">
+        <div class="relative flex min-h-0 flex-1 gap-4">
           @if (roomsOpen() || presenceOpen()) {
             <button
-              class="absolute inset-0 z-10 bg-black/20 lg:hidden"
+              class="absolute inset-0 z-10 rounded-xl bg-black/20 lg:hidden"
               type="button"
               aria-label="Close panel"
               (click)="closePanels()"
@@ -49,7 +54,7 @@ import { RoomPresenceList } from './room-presence-list';
           }
 
           <aside [class]="sideClass(roomsOpen(), 'left')">
-            <p class="text-sm font-medium">{{ group.title }}</p>
+            <a [routerLink]="['/groups', group.id]" class="text-sm font-medium hover:underline">{{ group.title }}</a>
             <p class="text-xs text-muted-foreground">{{ rooms().length }} rooms</p>
             <ul class="mt-3 flex flex-col gap-1">
               @for (item of rooms(); track item.id) {
@@ -67,7 +72,7 @@ import { RoomPresenceList } from './room-presence-list';
             </ul>
           </aside>
 
-          <div class="flex min-w-0 flex-1 flex-col">
+          <div class="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border bg-background">
             <div class="hidden border-b px-4 py-2 lg:block">
               <p class="font-medium"># {{ room()?.name }}</p>
               <p class="text-sm text-muted-foreground">{{ room()?.description }}</p>
@@ -137,11 +142,14 @@ export class RoomPage {
   }
 
   protected sideClass(open: boolean, side: 'left' | 'right'): string {
-    const edge = side === 'left' ? 'left-0 border-r' : 'right-0 border-l';
+    const place = side === 'left' ? 'left-0' : 'right-0';
+    // Presence is wider so You / Group admin chips stay on one line.
+    const width = side === 'left' ? 'w-56' : 'w-72';
+    const card = `flex ${width} shrink-0 flex-col overflow-hidden rounded-xl border bg-background p-4`;
     if (open) {
-      return `absolute inset-y-0 z-20 flex w-56 flex-col bg-background p-3 shadow ${edge} lg:static lg:flex lg:shadow-none`;
+      return `absolute inset-y-0 z-20 shadow-lg ${place} ${card} lg:static lg:shadow-none`;
     }
-    return `hidden w-56 flex-col border-border p-3 lg:flex ${edge}`;
+    return `hidden ${card} lg:flex`;
   }
 
   protected onSend(payload: ComposerSend): void {

@@ -21,7 +21,7 @@ import { BrandMark } from './brand-mark';
   template: `
     @if (user(); as user) {
       <header class="border-b bg-background">
-        <nav class="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 lg:gap-6">
+        <nav class="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 lg:gap-6">
           <button
             hlmBtn
             variant="outline"

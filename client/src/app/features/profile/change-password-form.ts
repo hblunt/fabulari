@@ -16,6 +16,7 @@ const PASSWORD_PATTERN = /^(?=.*[A-Z])(?=.*[0-9])[A-Za-z0-9]{8,}$/;
   selector: 'app-change-password-form',
   imports: [ReactiveFormsModule, HlmButton, HlmInput, HlmLabel],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'block' },
   template: `
     <form class="rounded-xl border p-4" [formGroup]="form" (ngSubmit)="submit()">
       <h2 class="font-medium">Change password</h2>

@@ -1,26 +1,17 @@
 // client/src/app/features/profile/profile-page.ts
 // Own account (wf-11). Email is read-only. Picture upload is shown disabled.
-// Group names come from GET /api/groups/:id so admin vs member can be labelled.
 
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { forkJoin } from 'rxjs';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmInput } from '@spartan-ng/helm/input';
 import { HlmLabel } from '@spartan-ng/helm/label';
 import type { User } from '../../core/models';
 import { AuthService } from '../../core/services/auth-service';
-import { GroupService } from '../../core/services/group-service';
 import { NotificationService } from '../../core/services/notification-service';
 import { UserService } from '../../core/services/user-service';
 import { ChangePasswordForm } from './change-password-form';
 import { ProfilePictureUpload } from './profile-picture-upload';
-
-interface GroupRow {
-  id: string;
-  title: string;
-  role: string;
-}
 
 @Component({
   selector: 'app-profile-page',
@@ -32,8 +23,11 @@ interface GroupRow {
       <p class="mt-1 text-sm text-muted-foreground">Your account details.</p>
 
       @if (user(); as user) {
-        <div class="mt-6 grid gap-6 md:grid-cols-2">
-          <app-profile-picture-upload [initials]="initials(user)" />
+        <div class="mt-6 grid items-start gap-6 md:grid-cols-2">
+          <div class="flex flex-col gap-6">
+            <app-profile-picture-upload [initials]="initials(user)" />
+            <app-change-password-form />
+          </div>
 
           <form class="rounded-xl border p-4" [formGroup]="form" (ngSubmit)="save()">
             <h2 class="font-medium">Details</h2>
@@ -58,22 +52,6 @@ interface GroupRow {
             </div>
             <button hlmBtn class="mt-4" type="submit" [disabled]="form.invalid || isSaving()">Save changes</button>
           </form>
-
-          <app-change-password-form />
-
-          <div class="rounded-xl border p-4">
-            <h2 class="font-medium">Your groups</h2>
-            <ul class="mt-3 flex flex-col gap-2 text-sm">
-              @for (group of groups(); track group.id) {
-                <li class="flex justify-between gap-3">
-                  <span>{{ group.title }}</span>
-                  <span class="text-muted-foreground">{{ group.role }}</span>
-                </li>
-              } @empty {
-                <li class="text-muted-foreground">You are not in any groups.</li>
-              }
-            </ul>
-          </div>
         </div>
       }
     </section>
@@ -81,13 +59,11 @@ interface GroupRow {
 })
 export class ProfilePage {
   private readonly users = inject(UserService);
-  private readonly groupsApi = inject(GroupService);
   private readonly auth = inject(AuthService);
   private readonly notify = inject(NotificationService);
   private readonly fb = inject(FormBuilder);
 
   protected readonly user = signal<User | null>(null);
-  protected readonly groups = signal<GroupRow[]>([]);
   protected readonly isSaving = signal(false);
 
   protected readonly form = this.fb.nonNullable.group({
@@ -128,25 +104,5 @@ export class ProfilePage {
   private show(user: User): void {
     this.user.set(user);
     this.form.setValue({ firstName: user.firstName, lastName: user.lastName, age: user.age });
-    this.loadGroups(user);
-  }
-
-  private loadGroups(user: User): void {
-    if (!user.groups.length) {
-      this.groups.set([]);
-      return;
-    }
-    forkJoin(user.groups.map((id) => this.groupsApi.get(id))).subscribe({
-      next: (details) => {
-        this.groups.set(
-          details.map((d) => ({
-            id: d.group.id,
-            title: d.group.title,
-            role: d.group.admins.includes(user.id) ? 'Group admin' : 'Member',
-          })),
-        );
-      },
-      error: (err) => this.notify.error(err.error?.error ?? 'Could not load your groups.'),
-    });
   }
 }
