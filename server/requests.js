@@ -8,6 +8,7 @@
 const { db, save } = require("./storage");
 const { newId } = require("./ids");
 const { writeAudit } = require("./audit");
+const { createRoom } = require("./rooms");
 
 const REQUEST_TYPES = [
   "GROUP_CREATE",
@@ -350,17 +351,10 @@ function applyApproval(actor, request) {
   if (request.type === "ROOM_CREATE") {
     const group = db.groups.find((g) => g.id === request.payload.groupId);
     if (!group) return { status: 404, error: "Group not found." };
-    const room = {
-      id: newId("room"),
-      groupId: group.id,
-      name: request.payload.name,
-      description: request.payload.description,
-      createdAt: new Date().toISOString(),
-    };
-    db.rooms.push(room);
-    save("rooms");
-    created = room;
-    writeAudit(actor, "ROOM_CREATED", `Room: ${room.name}`, `In group ${group.title}.`);
+    const result = createRoom(group, request.payload);
+    if (result.error) return result;
+    created = result.room;
+    writeAudit(actor, "ROOM_CREATED", `Room: ${result.room.name}`, `In group ${group.title}.`);
   }
 
   if (request.type === "USER_REPORT") {

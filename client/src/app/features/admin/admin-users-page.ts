@@ -1,7 +1,7 @@
 // client/src/app/features/admin/admin-users-page.ts
-// Every account (wf-13). Delete needs an approved SYSTEM_BAN and is blocked
-// while the user is the sole admin of any group. Sole-admin is derived from
-// GET /api/groups/:id — the users list does not include admin arrays.
+// Every account (wf-13). Delete needs an approved SYSTEM_BAN. Super-admin
+// delete appoints the next remaining member alphabetically if they were the
+// sole admin; leave/remove still refuse to orphan a group.
 
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { forkJoin, map, of, switchMap, take } from 'rxjs';
@@ -72,8 +72,9 @@ import { ConfirmDialog, type ConfirmDialogContext } from '../requests/confirm-di
       </ul>
 
       <p class="mt-6 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
-        Deletion requires an approved system ban request and is blocked while the
-        user is the sole admin of any group.
+        Deletion requires an approved system ban. If they were the sole admin of a
+        group that still has members, the next member alphabetically becomes admin.
+        Empty groups are removed. Leaving a group as sole admin is still blocked.
       </p>
     </section>
   `,
@@ -125,12 +126,11 @@ export class AdminUsersPage {
   }
 
   protected canDelete(user: User): boolean {
-    return user.role !== 'SUPER_ADMIN' && !this.isSoleAdmin(user.id) && this.banByTarget().has(user.id);
+    return user.role !== 'SUPER_ADMIN' && this.banByTarget().has(user.id);
   }
 
   protected deleteHint(user: User): string {
     if (user.role === 'SUPER_ADMIN') return 'The super admin cannot be deleted.';
-    if (this.isSoleAdmin(user.id)) return 'Sole admin of a group with other members — appoint a replacement first.';
     if (!this.banByTarget().has(user.id)) return 'Needs an approved system ban request.';
     return '';
   }
@@ -142,6 +142,9 @@ export class AdminUsersPage {
       context: {
         title: `Delete ${user.firstName} ${user.lastName}?`,
         subtitle: 'Their account is removed immediately. The email can never be registered again.',
+        notice: this.isSoleAdmin(user.id)
+          ? 'They are the sole admin of a group with members. The next member alphabetically becomes admin.'
+          : undefined,
         confirmLabel: 'Delete account',
       },
     });

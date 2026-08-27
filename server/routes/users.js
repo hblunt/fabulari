@@ -58,6 +58,14 @@ router.delete("/:id", requireSuperAdmin, (req, res) => {
       `Removed because ${result.user.firstName} ${result.user.lastName} was its last member.`,
     );
   }
+  for (const row of result.appointed ?? []) {
+    writeAudit(
+      req.user,
+      "GROUP_ADMIN_APPOINTED",
+      `User: ${row.name}`,
+      `Became admin of ${row.groupTitle} after ${result.user.firstName} ${result.user.lastName} was deleted.`,
+    );
+  }
   res.status(204).end();
 });
 

@@ -22,7 +22,7 @@ const CHIPS: { id: Chip; label: string }[] = [
 const CATEGORIES: Record<Exclude<Chip, 'ALL'>, string[]> = {
   GROUPS: ['GROUP_CREATED', 'GROUP_DELETED', 'GROUP_DELETE_APPROVED', 'GROUP_CREATE_REJECTED', 'GROUP_DELETE_REJECTED'],
   ROOMS: ['ROOM_CREATED', 'ROOM_CREATE_REJECTED'],
-  MEMBERS: ['GROUP_JOIN_APPROVED', 'GROUP_JOIN_REJECTED'],
+  MEMBERS: ['GROUP_JOIN_APPROVED', 'GROUP_JOIN_REJECTED', 'GROUP_ADMIN_APPOINTED'],
   BANS: [
     'SYSTEM_BAN_APPROVED',
     'SYSTEM_BAN_REJECTED',
@@ -43,6 +43,7 @@ const ACTION_LABELS: Record<string, string> = {
   ROOM_CREATE_REJECTED: 'Room proposal rejected',
   GROUP_JOIN_APPROVED: 'Join approved',
   GROUP_JOIN_REJECTED: 'Join rejected',
+  GROUP_ADMIN_APPOINTED: 'Admin appointed',
   SYSTEM_BAN_APPROVED: 'System ban approved',
   SYSTEM_BAN_REJECTED: 'System ban rejected',
   USER_DELETED: 'Account deleted',

@@ -85,15 +85,18 @@ function publicUsersByIds(ids) {
     .map(toPublicUser);
 }
 
-function isSoleAdminAnywhere(userId) {
-  // Block only when other members would be left without an admin. A last
-  // remaining member can be deleted — that group is removed with them.
-  return db.groups.some(
-    (g) =>
-      g.admins.includes(userId) &&
-      g.admins.length === 1 &&
-      g.members.some((id) => id !== userId),
-  );
+function sortMembers(a, b) {
+  return a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName);
+}
+
+// Super-admin delete only. Leave/demote still refuse to orphan a group.
+function successorAdminId(group, departingId) {
+  const remaining = group.members
+    .filter((id) => id !== departingId)
+    .map((id) => db.users.find((u) => u.id === id))
+    .filter(Boolean)
+    .sort(sortMembers);
+  return remaining[0]?.id ?? null;
 }
 
 // Super admin sees everyone (optional groupId narrows). A group admin only
@@ -154,9 +157,6 @@ function applyUserDelete(userId, requestId) {
   if (user.role === "SUPER_ADMIN") {
     return { status: 403, error: "The super admin cannot be deleted." };
   }
-  if (isSoleAdminAnywhere(userId)) {
-    return { status: 409, error: "This user is the sole admin of a group." };
-  }
 
   const tombstone = {
     id: newId("bannedAccount"),
@@ -169,6 +169,24 @@ function applyUserDelete(userId, requestId) {
   };
   db.bannedAccounts.push(tombstone);
   save("bannedAccounts");
+
+  // Appoint a successor before stripping them, so leave/remove stay blocked
+  // while this path (system delete) can finish. Alphabetical last-name then
+  // first-name, same order as member lists.
+  const appointed = [];
+  for (const group of db.groups) {
+    const soleAdmin = group.admins.includes(userId) && group.admins.length === 1;
+    const othersRemain = group.members.some((id) => id !== userId);
+    if (!soleAdmin || !othersRemain) continue;
+    const nextId = successorAdminId(group, userId);
+    if (!nextId) continue;
+    const next = db.users.find((u) => u.id === nextId);
+    if (!group.admins.includes(nextId)) group.admins.push(nextId);
+    appointed.push({
+      groupTitle: group.title,
+      name: next ? `${next.firstName} ${next.lastName}` : nextId,
+    });
+  }
 
   for (const group of db.groups) {
     group.members = group.members.filter((id) => id !== userId);
@@ -194,7 +212,7 @@ function applyUserDelete(userId, requestId) {
   db.users = db.users.filter((u) => u.id !== userId);
   save("users");
 
-  return { ok: true, request, user: snapshot, tombstone, emptiedGroups: emptiedTitles };
+  return { ok: true, request, user: snapshot, tombstone, emptiedGroups: emptiedTitles, appointed };
 }
 
 function applyMePatch(user, body) {

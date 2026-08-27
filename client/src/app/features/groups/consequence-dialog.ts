@@ -29,7 +29,7 @@ export interface ConsequenceDialogContext {
     </div>
 
     <p class="text-sm">{{ ctx.body }}</p>
-    <ul class="flex flex-col gap-1 text-sm">
+    <ul class="mt-4 flex flex-col gap-1 text-sm">
       @for (user of ctx.affected; track user.id) {
         <li>{{ user.firstName }} {{ user.lastName }} (Age {{ user.age }})</li>
       }

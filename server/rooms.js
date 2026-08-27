@@ -1,8 +1,29 @@
 // server/rooms.js
-// Room edit/delete helpers (Phase1.md §6). Creation is not here — rooms
-// only appear by approving a ROOM_CREATE request.
+// Room create/edit/delete (Phase1.md §6). Members propose via ROOM_CREATE;
+// group admins also POST a room directly.
 
 const { db, save } = require("./storage");
+const { newId } = require("./ids");
+
+function createRoom(group, { name, description }) {
+  if (typeof name !== "string" || !name.trim()) {
+    return { status: 400, error: "Name is required." };
+  }
+  if (description !== undefined && typeof description !== "string") {
+    return { status: 400, error: "Description must be a string." };
+  }
+  const room = {
+    id: newId("room"),
+    groupId: group.id,
+    name: name.trim(),
+    createdAt: new Date().toISOString(),
+  };
+  const desc = description?.trim();
+  if (desc) room.description = desc;
+  db.rooms.push(room);
+  save("rooms");
+  return { room };
+}
 
 function parseRoomPatch(body) {
   if (!body || typeof body !== "object") {
@@ -47,4 +68,4 @@ function deleteRoom(room) {
   save("rooms");
 }
 
-module.exports = { applyRoomPatch, deleteRoom };
+module.exports = { createRoom, applyRoomPatch, deleteRoom };
