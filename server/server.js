@@ -1,11 +1,12 @@
 // server/server.js
-// Express entry point. Stage 0 wires the foundations — storage, caller
-// identification and the health check. Feature routes arrive per stage
-// (auth in Stage 1, requests in Stage 2, ...). MongoDB/sockets are Phase 2.
+// Express entry point. JSON files still back the live API (Stage 1 will
+// switch that to Mongo). On boot we connect to Mongo so seed/reset and the
+// health check have a real database, and so a missing Mongo is obvious.
 
 const express = require("express");
 const cors = require("cors");
 const { load } = require("./storage");
+const { connect, isConnected } = require("./mongo");
 const { identifyUser } = require("./middleware");
 const bootstrapRouter = require("./routes/bootstrap");
 const authRouter = require("./routes/auth");
@@ -37,7 +38,7 @@ app.use(express.json());
 app.use(identifyUser);
 
 app.get("/api/health", (req, res) => {
-  res.json({ ok: true });
+  res.json({ ok: true, mongo: isConnected() });
 });
 
 // Feature routes, one router per area (§6). Stage 1: onboarding and auth.
@@ -50,6 +51,14 @@ app.use("/api/users", usersRouter);
 app.use("/api/banned-accounts", bannedAccountsRouter);
 app.use("/api/audit", auditRouter);
 
-app.listen(PORT, () => {
-  console.log(`Server listening on http://localhost:${PORT}`);
+async function start() {
+  await connect();
+  app.listen(PORT, () => {
+    console.log(`Server listening on http://localhost:${PORT}`);
+  });
+}
+
+start().catch((err) => {
+  console.error("Failed to start. Is MongoDB running?", err.message);
+  process.exit(1);
 });
