@@ -9,7 +9,7 @@ export interface Group {
   id: string;
   title: string;
   description: string;
-  ageLimit: number; // Minimum self-reported age required to join.
+  ageLimit: number; // Minimum calculated age required to join.
   theme: GroupTheme; // Preset palette applied to the group and its rooms.
   members: string[]; // User IDs with access to the group.
   admins: string[]; // Must always contain at least one ID.

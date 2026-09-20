@@ -10,7 +10,8 @@ export interface User {
   email: string; // Unique and immutable; used to log in.
   firstName: string;
   lastName: string;
-  age: number; // Self-reported at registration, checked against group age limits.
+  dateOfBirth: string; // YYYY-MM-DD. Age is calculated from this, never stored.
+  age: number; // Calculated on the server from dateOfBirth for display and gates.
   role: Role; // Group admin status lives on the group, not here.
   profilePicture: string | null; // Filename, or null for the default avatar.
   groups: string[]; // Group IDs, denormalised for the most frequent read.

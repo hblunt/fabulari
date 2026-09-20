@@ -2,7 +2,7 @@
 // The reduced user object written to browser local storage on login
 // (Phase1.md §4 "Client-side storage"). It exists to restore the session and
 // drive guards and conditional UI — so it carries identity and role, never
-// the password hash and nothing editable like age.
+// the password hash and nothing editable like date of birth.
 
 import type { Role } from './types';
 

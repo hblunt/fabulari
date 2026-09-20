@@ -16,7 +16,7 @@ const STORAGE_KEY = 'currentUser';
 export interface NewUserDetails {
   firstName: string;
   lastName: string;
-  age: number;
+  dateOfBirth: string;
   email: string;
   password: string;
 }
@@ -85,8 +85,8 @@ export class AuthService {
     this.setSession({ ...user, groups: user.groups.filter((id) => id !== groupId) });
   }
 
-  // Profile PATCH can change the name shown in the shell. Age stays off
-  // SessionUser so this only copies the identity fields login already stores.
+  // Profile PATCH can change the name shown in the shell. Date of birth stays
+  // off SessionUser so this only copies the identity fields login already stores.
   applyUser(user: User): void {
     this.setSession(toSessionUser(user));
   }
@@ -98,7 +98,7 @@ export class AuthService {
 }
 
 // The stored shape (§4 "Client-side storage"): identity and role only —
-// editable fields like age stay server-side so they can't go stale here.
+// editable fields like date of birth stay server-side so they can't go stale here.
 function toSessionUser(user: User): SessionUser {
   return {
     id: user.id,

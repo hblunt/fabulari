@@ -1,16 +1,9 @@
 [
   {
-    "id": "r-70efdf2e",
-    "groupId": "g-c9f0f895",
-    "name": "new-releases",
-    "description": "Films currently in cinemas.",
-    "createdAt": "2026-08-21T08:30:00.000Z"
-  },
-  {
-    "id": "r-6f4922f4",
-    "groupId": "g-c9f0f895",
-    "name": "classics",
-    "description": "Anything released before 2000.",
-    "createdAt": "2026-08-21T16:20:00.000Z"
+    "id": "r-eac1a7c8-1bc0-4859-96eb-41b78bee5b29",
+    "groupId": "g-b1b25353-c50d-467d-a6bb-644b8503fa6c",
+    "name": "room",
+    "createdAt": "2026-09-04T01:03:01.561Z",
+    "description": "cd"
   }
 ]

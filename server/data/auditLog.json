@@ -1,11 +1,56 @@
 [
   {
-    "id": "a-b6d767d2",
-    "type": "SYSTEM_BAN_APPROVED",
-    "actorName": "System Administrator",
+    "id": "a-3ef2bb72-754c-476e-a61e-22e68c7cdd07",
+    "type": "GROUP_CREATED",
+    "actorName": "Sys Admin",
     "actorEmail": "admin@example.com",
-    "targetLabel": "User: Sam Doyle (banned@example.com)",
-    "detail": "Ban requested by Holly Bennett.",
-    "timestamp": "2026-08-22T11:05:00.000Z"
+    "targetLabel": "Group: group",
+    "detail": "Requested by User 1.",
+    "timestamp": "2026-09-04T00:59:10.878Z"
+  },
+  {
+    "id": "a-1dd3b7e0-c67d-412f-9e26-052603436240",
+    "type": "GROUP_JOIN_APPROVED",
+    "actorName": "User 1",
+    "actorEmail": "user1@com.au",
+    "targetLabel": "Group: group",
+    "detail": "User 3 joined.",
+    "timestamp": "2026-09-04T01:00:48.342Z"
+  },
+  {
+    "id": "a-0268c402-1afc-47da-b2ac-15d3076a3403",
+    "type": "ROOM_CREATED",
+    "actorName": "User 1",
+    "actorEmail": "user1@com.au",
+    "targetLabel": "Room: room",
+    "detail": "In group group.",
+    "timestamp": "2026-09-04T01:03:01.564Z"
+  },
+  {
+    "id": "a-bfeca877-7031-4aae-965b-990eefcc5c61",
+    "type": "USER_REPORT_APPROVED",
+    "actorName": "User 1",
+    "actorEmail": "user1@com.au",
+    "targetLabel": "User: User 1",
+    "detail": "Permits a group ban.",
+    "timestamp": "2026-09-04T01:03:32.445Z"
+  },
+  {
+    "id": "a-94a48bcf-2f6d-434b-8b7a-80679a05d92f",
+    "type": "GROUP_BAN",
+    "actorName": "User 1",
+    "actorEmail": "user1@com.au",
+    "targetLabel": "User: User 1",
+    "detail": "Banned from group. Report q-d0e7e42e-3622-4260-ab60-a2d2a0766876.",
+    "timestamp": "2026-09-04T01:03:32.458Z"
+  },
+  {
+    "id": "a-8777b8d4-c45a-443d-b2f2-c89f81aa576f",
+    "type": "USER_DELETED",
+    "actorName": "holly b",
+    "actorEmail": "holl@ho.com",
+    "targetLabel": "User: holly b (holl@ho.com)",
+    "detail": "Deleted their own account.",
+    "timestamp": "2026-09-20T09:08:27.501Z"
   }
 ]

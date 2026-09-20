@@ -7,6 +7,7 @@ const express = require("express");
 const { db } = require("../storage");
 const { fail } = require("../errors");
 const { requireAuth } = require("../middleware");
+const { ageFromDob } = require("../age");
 const {
   REQUEST_TYPES,
   STATUSES,
@@ -33,7 +34,7 @@ function withDisplay(request) {
   const user = db.users.find((u) => u.id === request.submittedBy);
   const extra = {
     submitterName: displayName(request.submittedBy),
-    submitterAge: user ? user.age : null,
+    submitterAge: user ? ageFromDob(user.dateOfBirth) : null,
     groupId: groupIdFor(request),
   };
 
@@ -86,7 +87,7 @@ router.post("/", (req, res) => {
   if (result.error) return fail(res, result.status, result.error);
 
   // Age-gated joins are rejected here so they never appear in an admin queue.
-  if (type === "GROUP_JOIN" && req.user.age < result.group.ageLimit) {
+  if (type === "GROUP_JOIN" && ageFromDob(req.user.dateOfBirth) < result.group.ageLimit) {
     const request = persistRequest(
       buildRequest(req.user, type, result.targetId, result.payload, null, {
         status: "REJECTED",

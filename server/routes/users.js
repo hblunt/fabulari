@@ -1,13 +1,13 @@
 // server/routes/users.js
-// User directory, own profile, and hard-delete (Phase1.md §6 "Users").
-// /me is registered before /:id so "me" is never treated as a user id.
-// POST /me/picture is Phase 2.
+// User directory, own profile, self-delete, and hard-delete (Phase2.md §6
+// "Users"). /me is registered before /:id so "me" is never treated as a user
+// id. POST /me/picture is still later in Phase 2.
 
 const express = require("express");
 const { fail } = require("../errors");
 const { requireAuth, requireSuperAdmin } = require("../middleware");
 const { writeAudit } = require("../audit");
-const { listVisibleUsers, applyUserDelete, applyMePatch, applyPasswordChange, toPublicUser } = require("../users");
+const { listVisibleUsers, applyUserDelete, applySelfDelete, applyMePatch, applyPasswordChange, toPublicUser } = require("../users");
 
 const router = express.Router();
 
@@ -29,6 +29,13 @@ router.patch("/me", (req, res) => {
   res.json({ user: toPublicUser(result.user) });
 });
 
+router.delete("/me", (req, res) => {
+  const result = applySelfDelete(req.user);
+  if (result.error) return fail(res, result.status, result.error);
+  writeUserRemovalAudit(req.user, result, "Deleted their own account.");
+  res.status(204).end();
+});
+
 router.get("/", (req, res) => {
   const groupId = req.query.groupId;
   if (Array.isArray(groupId)) {
@@ -44,15 +51,24 @@ router.get("/", (req, res) => {
 router.delete("/:id", requireSuperAdmin, (req, res) => {
   const result = applyUserDelete(req.params.id, req.body?.requestId);
   if (result.error) return fail(res, result.status, result.error);
-  writeAudit(
+  writeUserRemovalAudit(
     req.user,
+    result,
+    `Deletion requested by ${result.tombstone.requestedBy}.`,
+  );
+  res.status(204).end();
+});
+
+function writeUserRemovalAudit(actor, result, detail) {
+  writeAudit(
+    actor,
     "USER_DELETED",
     `User: ${result.user.firstName} ${result.user.lastName} (${result.user.email})`,
-    `Deletion requested by ${result.tombstone.requestedBy}.`,
+    detail,
   );
   for (const title of result.emptiedGroups ?? []) {
     writeAudit(
-      req.user,
+      actor,
       "GROUP_DELETED",
       `Group: ${title}`,
       `Removed because ${result.user.firstName} ${result.user.lastName} was its last member.`,
@@ -60,13 +76,12 @@ router.delete("/:id", requireSuperAdmin, (req, res) => {
   }
   for (const row of result.appointed ?? []) {
     writeAudit(
-      req.user,
+      actor,
       "GROUP_ADMIN_APPOINTED",
       `User: ${row.name}`,
       `Became admin of ${row.groupTitle} after ${result.user.firstName} ${result.user.lastName} was deleted.`,
     );
   }
-  res.status(204).end();
-});
+}
 
 module.exports = router;

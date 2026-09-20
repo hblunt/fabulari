@@ -18,6 +18,13 @@ import { BrandMark } from '../../shared/brand-mark';
 // Same rule as the server (server/users.js) and RegisterPage.
 const PASSWORD_PATTERN = /^(?=.*[A-Z])(?=.*[0-9])[A-Za-z0-9]{8,}$/;
 
+function todayLocalIso(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
 @Component({
   selector: 'app-bootstrap-page',
   imports: [ReactiveFormsModule, HlmButton, HlmCardImports, HlmInput, HlmLabel, BrandMark],
@@ -49,8 +56,8 @@ const PASSWORD_PATTERN = /^(?=.*[A-Z])(?=.*[0-9])[A-Za-z0-9]{8,}$/;
           </div>
 
           <div class="flex w-1/2 flex-col gap-1.5 pr-2">
-            <label hlmLabel for="age">Age</label>
-            <input hlmInput id="age" type="number" formControlName="age" placeholder="30" min="1" />
+            <label hlmLabel for="dateOfBirth">Date of birth</label>
+            <input hlmInput id="dateOfBirth" type="date" formControlName="dateOfBirth" [max]="maxDob" />
           </div>
 
           <div class="flex flex-col gap-1.5">
@@ -74,12 +81,13 @@ export class BootstrapPage {
   private readonly fb = inject(FormBuilder);
 
   protected readonly isSubmitting = signal(false);
+  protected readonly maxDob = todayLocalIso();
 
   protected readonly form = this.fb.nonNullable.group({
     firstName: ['', Validators.required],
     lastName: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
-    age: [null as number | null, [Validators.required, Validators.min(1)]],
+    dateOfBirth: ['', Validators.required],
     password: ['', [Validators.required, Validators.pattern(PASSWORD_PATTERN)]],
   });
 
@@ -88,7 +96,7 @@ export class BootstrapPage {
     this.isSubmitting.set(true);
 
     const value = this.form.getRawValue();
-    this.auth.bootstrap({ ...value, age: Number(value.age) }).subscribe({
+    this.auth.bootstrap(value).subscribe({
       next: () => {
         this.notify.success('Super admin created. Sign in to continue.');
         this.router.navigate(['/login']);

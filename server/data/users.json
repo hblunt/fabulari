@@ -1,62 +1,52 @@
 [
   {
-    "id": "u-0000adm1",
+    "id": "u-5eda2094-538a-4bdf-b892-5a9ee55d693a",
     "email": "admin@example.com",
-    "passwordHash": "$2b$10$F13mzRQKFJHpcTCM3nnZQuRa5Qf0OR46ITuF/Lrh.h60WuyUud212",
-    "firstName": "System",
-    "lastName": "Administrator",
-    "age": 40,
+    "passwordHash": "$2b$10$gDSqxYm9WoxU.AsKcgvqSO8y2vVu1hOlfTxcUvpJIwW7wNhHSFgme",
+    "firstName": "Sys",
+    "lastName": "Admin",
+    "dateOfBirth": "1971-09-20",
     "role": "SUPER_ADMIN",
     "profilePicture": null,
     "groups": [],
-    "createdAt": "2026-08-19T09:00:00.000Z"
+    "createdAt": "2026-09-04T00:57:26.743Z"
   },
   {
-    "id": "u-8f14e45f",
-    "email": "holly@example.com",
-    "passwordHash": "$2b$10$F13mzRQKFJHpcTCM3nnZQuRa5Qf0OR46ITuF/Lrh.h60WuyUud212",
-    "firstName": "Holly",
-    "lastName": "Bennett",
-    "age": 21,
-    "role": "USER",
-    "profilePicture": null,
-    "groups": ["g-c9f0f895"],
-    "createdAt": "2026-08-20T10:00:00.000Z"
-  },
-  {
-    "id": "u-6512bd43",
-    "email": "marcus@example.com",
-    "passwordHash": "$2b$10$F13mzRQKFJHpcTCM3nnZQuRa5Qf0OR46ITuF/Lrh.h60WuyUud212",
-    "firstName": "Marcus",
-    "lastName": "Reid",
-    "age": 24,
-    "role": "USER",
-    "profilePicture": null,
-    "groups": ["g-c9f0f895"],
-    "createdAt": "2026-08-20T11:30:00.000Z"
-  },
-  {
-    "id": "u-c20ad4d7",
-    "email": "priya@example.com",
-    "passwordHash": "$2b$10$F13mzRQKFJHpcTCM3nnZQuRa5Qf0OR46ITuF/Lrh.h60WuyUud212",
-    "firstName": "Priya",
-    "lastName": "Nair",
-    "age": 19,
-    "role": "USER",
-    "profilePicture": null,
-    "groups": ["g-c9f0f895"],
-    "createdAt": "2026-08-21T08:15:00.000Z"
-  },
-  {
-    "id": "u-c51ce410",
-    "email": "jordan@example.com",
-    "passwordHash": "$2b$10$F13mzRQKFJHpcTCM3nnZQuRa5Qf0OR46ITuF/Lrh.h60WuyUud212",
-    "firstName": "Jordan",
-    "lastName": "Blake",
-    "age": 26,
+    "id": "u-1d306c53-980f-44f8-97ba-f016874b3233",
+    "email": "user1@com.au",
+    "passwordHash": "$2b$10$AZfDYIU8Nd..IsgMS5deSee43n./WQWQQ9p9Lf3RYng7.gJlwZeFm",
+    "firstName": "User",
+    "lastName": "1",
+    "dateOfBirth": "1971-09-20",
     "role": "USER",
     "profilePicture": null,
     "groups": [],
-    "createdAt": "2026-08-21T09:45:00.000Z"
+    "createdAt": "2026-09-04T00:58:20.648Z"
+  },
+  {
+    "id": "u-696b93f4-b6e5-4d8c-b728-d770e1b2729e",
+    "email": "user2@com.au",
+    "passwordHash": "$2b$10$ukyl5Qgy1tUCdn53KmptpuHhQei5yYs1dO9CCPd4jratXcubSEqiC",
+    "firstName": "User",
+    "lastName": "2",
+    "dateOfBirth": "2018-09-20",
+    "role": "USER",
+    "profilePicture": null,
+    "groups": [],
+    "createdAt": "2026-09-04T00:59:46.274Z"
+  },
+  {
+    "id": "u-f3c4c4e8-b6b2-42f0-8c36-eb6fdddbb8d6",
+    "email": "user3@com.au",
+    "passwordHash": "$2b$10$KfHufRoE9M130BYcgccYw.ZBH4JC0hLqrs4DAT3iPQVSJMcw7GSKO",
+    "firstName": "User",
+    "lastName": "3",
+    "dateOfBirth": "1966-09-20",
+    "role": "USER",
+    "profilePicture": null,
+    "groups": [
+      "g-b1b25353-c50d-467d-a6bb-644b8503fa6c"
+    ],
+    "createdAt": "2026-09-04T01:00:31.399Z"
   }
 ]

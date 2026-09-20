@@ -5,10 +5,11 @@
 const { db, save } = require("./storage");
 const { GROUP_THEMES } = require("./requests");
 const { toPublicUser } = require("./users");
+const { ageFromDob } = require("./age");
 
 function joinState(user, group) {
   if (group.members.includes(user.id)) return "member";
-  if (user.age < group.ageLimit) return "blocked";
+  if (ageFromDob(user.dateOfBirth) < group.ageLimit) return "blocked";
   const requested = db.requests.some(
     (r) =>
       r.type === "GROUP_JOIN" &&
@@ -96,7 +97,7 @@ function applyPatch(group, body) {
   if (patch.ageLimit !== undefined && patch.ageLimit > group.ageLimit) {
     removed = group.members
       .map((id) => db.users.find((u) => u.id === id))
-      .filter((u) => u && u.age < patch.ageLimit);
+      .filter((u) => u && ageFromDob(u.dateOfBirth) < patch.ageLimit);
 
     const remainingAdmins = group.admins.filter((id) => !removed.some((u) => u.id === id));
     if (remainingAdmins.length === 0) {

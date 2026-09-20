@@ -1,6 +1,6 @@
 // client/src/app/core/services/user-service.ts
-// Profile reads/updates, password change, the admin user list and deletion
-// (Phase1.md §5). Picture upload is Phase 2.
+// Profile reads/updates, password change, self-delete, the admin user list
+// and ban-deletion (Phase2.md §5). Picture upload is later in Phase 2.
 
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
@@ -15,8 +15,12 @@ export class UserService {
     return this.http.get<{ user: User }>('/api/users/me').pipe(map((res) => res.user));
   }
 
-  patchMe(body: Partial<Pick<User, 'firstName' | 'lastName' | 'age'>>): Observable<User> {
+  patchMe(body: Partial<Pick<User, 'firstName' | 'lastName' | 'dateOfBirth'>>): Observable<User> {
     return this.http.patch<{ user: User }>('/api/users/me', body).pipe(map((res) => res.user));
+  }
+
+  deleteMe(): Observable<void> {
+    return this.http.delete<void>('/api/users/me');
   }
 
   changePassword(currentPassword: string, newPassword: string): Observable<void> {

@@ -1,8 +1,8 @@
 // client/src/app/features/auth/register-page.ts
 // Self-registration (wireframe 02) — administrators cannot create accounts on
 // a user's behalf (§3). Password rules are shown before submission and
-// validated on both sides (frame note 2); age is self-reported and checked
-// against group age limits later (frame note 1). Success returns to /login
+// validated on both sides (frame note 2); date of birth is used to calculate
+// age against group limits later. Success returns to /login
 // (storyboard flow map) — no auto sign-in.
 
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
@@ -20,6 +20,14 @@ import { BrandMark } from '../../shared/brand-mark';
 // digits only, at least one uppercase and one digit. Client-side validation
 // is a courtesy; the server check is the real gate.
 const PASSWORD_PATTERN = /^(?=.*[A-Z])(?=.*[0-9])[A-Za-z0-9]{8,}$/;
+
+// Local calendar date, not UTC — so "today" cannot slip back a day in Australia.
+function todayLocalIso(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${now.getFullYear()}-${month}-${day}`;
+}
 
 @Component({
   selector: 'app-register-page',
@@ -54,8 +62,8 @@ const PASSWORD_PATTERN = /^(?=.*[A-Z])(?=.*[0-9])[A-Za-z0-9]{8,}$/;
           </div>
 
           <div class="flex w-1/2 flex-col gap-1.5 pr-2">
-            <label hlmLabel for="age">Age</label>
-            <input hlmInput id="age" type="number" formControlName="age" placeholder="22" min="1" />
+            <label hlmLabel for="dateOfBirth">Date of birth</label>
+            <input hlmInput id="dateOfBirth" type="date" formControlName="dateOfBirth" [max]="maxDob" />
           </div>
 
           <div class="flex flex-col gap-1.5">
@@ -84,12 +92,13 @@ export class RegisterPage {
   private readonly fb = inject(FormBuilder);
 
   protected readonly isSubmitting = signal(false);
+  protected readonly maxDob = todayLocalIso();
 
   protected readonly form = this.fb.nonNullable.group({
     firstName: ['', Validators.required],
     lastName: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
-    age: [null as number | null, [Validators.required, Validators.min(1)]],
+    dateOfBirth: ['', Validators.required],
     password: ['', [Validators.required, Validators.pattern(PASSWORD_PATTERN)]],
   });
 
@@ -98,7 +107,7 @@ export class RegisterPage {
     this.isSubmitting.set(true);
 
     const value = this.form.getRawValue();
-    this.auth.register({ ...value, age: Number(value.age) }).subscribe({
+    this.auth.register(value).subscribe({
       next: () => {
         this.notify.success('Account created. Sign in with your new password.');
         this.router.navigate(['/login']);

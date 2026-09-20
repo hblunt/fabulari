@@ -1,19 +1,44 @@
 [
   {
-    "id": "q-98f13708",
+    "id": "q-f6c59d4b-a462-4fb8-b399-d0fc0e41b57d",
     "type": "GROUP_CREATE",
-    "status": "PENDING",
-    "submittedBy": "u-6512bd43",
+    "status": "APPROVED",
+    "submittedBy": "u-1d306c53-980f-44f8-97ba-f016874b3233",
     "targetId": null,
     "payload": {
-      "title": "Board Games",
-      "description": "Tabletop gaming chat.",
-      "ageLimit": 12,
-      "theme": "moss"
+      "title": "group",
+      "description": "descrip",
+      "ageLimit": 16,
+      "theme": "ocean"
     },
     "reason": null,
-    "actionedBy": null,
-    "createdAt": "2026-08-23T19:44:00.000Z",
-    "actionedAt": null
+    "actionedBy": "u-5eda2094-538a-4bdf-b892-5a9ee55d693a",
+    "createdAt": "2026-09-04T00:59:01.416Z",
+    "actionedAt": "2026-09-04T00:59:10.879Z"
+  },
+  {
+    "id": "q-4fcb43cc-ff21-4819-a824-3d1032ab7d07",
+    "type": "GROUP_JOIN",
+    "status": "APPROVED",
+    "submittedBy": "u-f3c4c4e8-b6b2-42f0-8c36-eb6fdddbb8d6",
+    "targetId": "g-b1b25353-c50d-467d-a6bb-644b8503fa6c",
+    "reason": null,
+    "actionedBy": "u-1d306c53-980f-44f8-97ba-f016874b3233",
+    "createdAt": "2026-09-04T01:00:41.839Z",
+    "actionedAt": "2026-09-04T01:00:48.342Z"
+  },
+  {
+    "id": "q-d0e7e42e-3622-4260-ab60-a2d2a0766876",
+    "type": "USER_REPORT",
+    "status": "APPROVED",
+    "submittedBy": "u-f3c4c4e8-b6b2-42f0-8c36-eb6fdddbb8d6",
+    "targetId": "u-1d306c53-980f-44f8-97ba-f016874b3233",
+    "payload": {
+      "groupId": "g-b1b25353-c50d-467d-a6bb-644b8503fa6c"
+    },
+    "reason": "blah",
+    "actionedBy": "u-1d306c53-980f-44f8-97ba-f016874b3233",
+    "createdAt": "2026-09-04T01:01:55.160Z",
+    "actionedAt": "2026-09-04T01:03:32.447Z"
   }
 ]

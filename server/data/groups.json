@@ -1,14 +1,20 @@
 [
   {
-    "id": "g-c9f0f895",
-    "title": "Film Discussion",
-    "description": "General chat about film and television.",
-    "ageLimit": 15,
-    "theme": "slate",
-    "members": ["u-8f14e45f", "u-6512bd43", "u-c20ad4d7"],
-    "admins": ["u-8f14e45f"],
-    "bannedUsers": ["u-c51ce410"],
-    "createdBy": "u-8f14e45f",
-    "createdAt": "2026-08-20T14:02:00.000Z"
+    "id": "g-b1b25353-c50d-467d-a6bb-644b8503fa6c",
+    "title": "group",
+    "description": "descrip",
+    "ageLimit": 16,
+    "theme": "ocean",
+    "members": [
+      "u-f3c4c4e8-b6b2-42f0-8c36-eb6fdddbb8d6"
+    ],
+    "admins": [
+      "u-f3c4c4e8-b6b2-42f0-8c36-eb6fdddbb8d6"
+    ],
+    "bannedUsers": [
+      "u-1d306c53-980f-44f8-97ba-f016874b3233"
+    ],
+    "createdBy": "u-1d306c53-980f-44f8-97ba-f016874b3233",
+    "createdAt": "2026-09-04T00:59:10.877Z"
   }
 ]

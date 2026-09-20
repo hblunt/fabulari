@@ -1,11 +1,13 @@
 // server/users.js
-// User create, list, profile and hard-delete (Phase1.md §6). Password hashing
-// lives here so bootstrap, register and password-change cannot drift.
+// User create, list, profile, self-delete and hard-delete (Phase2.md §6).
+// Password hashing lives here so bootstrap, register and password-change
+// cannot drift.
 
 const bcrypt = require("bcrypt");
 const { db, save } = require("./storage");
 const { newId } = require("./ids");
 const { deleteGroupCascade } = require("./requests");
+const { ageFromDob, validateDateOfBirth } = require("./age");
 
 // 10 rounds is the bcrypt default cost: slow enough to resist brute force,
 // fast enough not to make login sluggish.
@@ -31,15 +33,14 @@ function validatePassword(password) {
 
 // Registration field checks shared by bootstrap and register. Returns the
 // first problem found, or null when the payload is acceptable.
-function validateNewUser({ firstName, lastName, age, email, password }) {
+function validateNewUser({ firstName, lastName, dateOfBirth, email, password }) {
   if (!firstName?.trim() || !lastName?.trim()) {
     return "First name and last name are required.";
   }
-  // Age is self-reported (§3 assumption 1) but must still be a usable number,
-  // because group age limits compare against it.
-  if (typeof age !== "number" || !Number.isFinite(age) || age < 1) {
-    return "Age must be a positive number.";
-  }
+  // Age is derived from date of birth (Phase2.md assumption 1) so the stored
+  // value can never go stale against group age limits.
+  const dobProblem = validateDateOfBirth(dateOfBirth);
+  if (dobProblem) return dobProblem;
   if (typeof email !== "string" || !/^\S+@\S+\.\S+$/.test(email.trim())) {
     return "A valid email address is required.";
   }
@@ -53,14 +54,14 @@ function normaliseEmail(email) {
 }
 
 // Creates and persists a user. Assumes the payload has passed validateNewUser.
-function createUser({ firstName, lastName, age, email, password }, role) {
+function createUser({ firstName, lastName, dateOfBirth, email, password }, role) {
   const user = {
     id: newId("user"),
     email: normaliseEmail(email),
     passwordHash: bcrypt.hashSync(password, BCRYPT_ROUNDS),
     firstName: firstName.trim(),
     lastName: lastName.trim(),
-    age,
+    dateOfBirth,
     role,
     profilePicture: null,
     groups: [],
@@ -74,8 +75,8 @@ function createUser({ firstName, lastName, age, email, password }, role) {
 // The API never returns the hash (§6 conventions) — every route that responds
 // with a user must pass it through here.
 function toPublicUser(user) {
-  const { passwordHash, ...publicUser } = user;
-  return publicUser;
+  const { passwordHash, age: _ignored, ...rest } = user;
+  return { ...rest, age: ageFromDob(user.dateOfBirth) };
 }
 
 function publicUsersByIds(ids) {
@@ -132,9 +133,54 @@ function requesterLabel(userId) {
   return user ? `${user.firstName} ${user.lastName} (${user.email})` : userId;
 }
 
-// Hard-delete. The tombstone is written first so the email stays blacklisted
-// even if a later step fails. Pending requests they submitted or that name
-// them as the target are dropped; the approved SYSTEM_BAN is kept.
+// Shared cascade for ban-delete and self-delete: appoint a successor where
+// they were sole admin, strip them from every group, drop emptied groups,
+// and clear pending requests they submitted or were named in.
+function removeUserFromSystem(user, keepRequestId) {
+  const userId = user.id;
+  const appointed = [];
+  for (const group of db.groups) {
+    const soleAdmin = group.admins.includes(userId) && group.admins.length === 1;
+    const othersRemain = group.members.some((id) => id !== userId);
+    if (!soleAdmin || !othersRemain) continue;
+    const nextId = successorAdminId(group, userId);
+    if (!nextId) continue;
+    const next = db.users.find((u) => u.id === nextId);
+    if (!group.admins.includes(nextId)) group.admins.push(nextId);
+    appointed.push({
+      groupTitle: group.title,
+      name: next ? `${next.firstName} ${next.lastName}` : nextId,
+    });
+  }
+
+  for (const group of db.groups) {
+    group.members = group.members.filter((id) => id !== userId);
+    group.admins = group.admins.filter((id) => id !== userId);
+    group.bannedUsers = group.bannedUsers.filter((id) => id !== userId);
+  }
+  save("groups");
+
+  const emptiedGroups = db.groups.filter((g) => g.members.length === 0);
+  const emptiedTitles = emptiedGroups.map((g) => g.title);
+  for (const group of emptiedGroups) {
+    deleteGroupCascade(group.id, keepRequestId);
+  }
+
+  db.requests = db.requests.filter((r) => {
+    if (keepRequestId && r.id === keepRequestId) return true;
+    if (r.status !== "PENDING") return true;
+    return r.submittedBy !== userId && r.targetId !== userId;
+  });
+  save("requests");
+
+  const snapshot = { firstName: user.firstName, lastName: user.lastName, email: user.email };
+  db.users = db.users.filter((u) => u.id !== userId);
+  save("users");
+  return { snapshot, emptiedGroups: emptiedTitles, appointed };
+}
+
+// Super-admin hard-delete after an approved SYSTEM_BAN. The tombstone is
+// written first so the email stays blacklisted even if a later step fails.
 function applyUserDelete(userId, requestId) {
   if (typeof requestId !== "string" || !requestId.trim()) {
     return { status: 400, error: "An approved SYSTEM_BAN requestId is required." };
@@ -170,49 +216,17 @@ function applyUserDelete(userId, requestId) {
   db.bannedAccounts.push(tombstone);
   save("bannedAccounts");
 
-  // Appoint a successor before stripping them, so leave/remove stay blocked
-  // while this path (system delete) can finish. Alphabetical last-name then
-  // first-name, same order as member lists.
-  const appointed = [];
-  for (const group of db.groups) {
-    const soleAdmin = group.admins.includes(userId) && group.admins.length === 1;
-    const othersRemain = group.members.some((id) => id !== userId);
-    if (!soleAdmin || !othersRemain) continue;
-    const nextId = successorAdminId(group, userId);
-    if (!nextId) continue;
-    const next = db.users.find((u) => u.id === nextId);
-    if (!group.admins.includes(nextId)) group.admins.push(nextId);
-    appointed.push({
-      groupTitle: group.title,
-      name: next ? `${next.firstName} ${next.lastName}` : nextId,
-    });
+  const cascade = removeUserFromSystem(user, request.id);
+  return { ok: true, request, user: cascade.snapshot, tombstone, emptiedGroups: cascade.emptiedGroups, appointed: cascade.appointed };
+}
+
+// Voluntary account removal. Not a ban: the email can be registered again.
+function applySelfDelete(user) {
+  if (user.role === "SUPER_ADMIN") {
+    return { status: 403, error: "The super admin cannot be deleted." };
   }
-
-  for (const group of db.groups) {
-    group.members = group.members.filter((id) => id !== userId);
-    group.admins = group.admins.filter((id) => id !== userId);
-    group.bannedUsers = group.bannedUsers.filter((id) => id !== userId);
-  }
-  save("groups");
-
-  const emptiedGroups = db.groups.filter((g) => g.members.length === 0);
-  const emptiedTitles = emptiedGroups.map((g) => g.title);
-  for (const group of emptiedGroups) {
-    deleteGroupCascade(group.id, request.id);
-  }
-
-  db.requests = db.requests.filter((r) => {
-    if (r.id === request.id) return true;
-    if (r.status !== "PENDING") return true;
-    return r.submittedBy !== userId && r.targetId !== userId;
-  });
-  save("requests");
-
-  const snapshot = { firstName: user.firstName, lastName: user.lastName, email: user.email };
-  db.users = db.users.filter((u) => u.id !== userId);
-  save("users");
-
-  return { ok: true, request, user: snapshot, tombstone, emptiedGroups: emptiedTitles, appointed };
+  const cascade = removeUserFromSystem(user, null);
+  return { ok: true, user: cascade.snapshot, emptiedGroups: cascade.emptiedGroups, appointed: cascade.appointed };
 }
 
 function applyMePatch(user, body) {
@@ -221,6 +235,9 @@ function applyMePatch(user, body) {
   }
   if (Object.prototype.hasOwnProperty.call(body, "email")) {
     return { status: 400, error: "Email cannot be changed." };
+  }
+  if (Object.prototype.hasOwnProperty.call(body, "age")) {
+    return { status: 400, error: "Age is calculated from date of birth." };
   }
 
   const patch = {};
@@ -236,11 +253,10 @@ function applyMePatch(user, body) {
     }
     patch.lastName = body.lastName.trim();
   }
-  if (body.age !== undefined) {
-    if (typeof body.age !== "number" || !Number.isFinite(body.age) || body.age < 1) {
-      return { status: 400, error: "Age must be a positive number." };
-    }
-    patch.age = body.age;
+  if (body.dateOfBirth !== undefined) {
+    const dobProblem = validateDateOfBirth(body.dateOfBirth);
+    if (dobProblem) return { status: 400, error: dobProblem };
+    patch.dateOfBirth = body.dateOfBirth;
   }
 
   if (Object.keys(patch).length === 0) {
@@ -275,6 +291,7 @@ module.exports = {
   toPublicUser,
   listVisibleUsers,
   applyUserDelete,
+  applySelfDelete,
   applyMePatch,
   applyPasswordChange,
 };
