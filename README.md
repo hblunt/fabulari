@@ -17,10 +17,11 @@ A full-stack chat application for Griffith University 3813ICT Full Stack Develop
 | UI primitives | spartan/ui (`@spartan-ng/brain` + helm) | 1.x |
 | Accessibility primitives | Angular CDK | (matches Angular version) |
 | API | Express | 5.2.1 |
+| Database | MongoDB (native `mongodb` driver, no mongoose) | 7.x |
 | CORS | `cors` | 2.8.6 |
 | API reload | nodemon (dev only) | 3.1.14 |
 
-Phase 1 stores data in JSON files on the server. Phase 2 will replace that with MongoDB, add socket.io for real-time chat, image upload, and automated tests.
+Phase 1 stores data in JSON files on the server. Phase 2 is moving that to MongoDB, then adding socket.io, image upload, and automated tests.
 
 ## Architecture at a glance
 
@@ -52,6 +53,23 @@ Fabulari/
 
 - Node.js **22.x** (this project was set up with `v22.22.3`; Angular 22 needs Node 20.19+ or 22.12+)
 - npm (comes with Node; this machine used `10.9.8`)
+- **MongoDB** running locally or on Atlas (native driver only — mongoose is not used)
+
+## MongoDB
+
+The API connects on boot. If Mongo is down, the server will not start.
+
+Default URL: `mongodb://127.0.0.1:27017/fabulari`
+
+To override it, copy `server/.env.example` to `server/.env` (gitignored) and set `MONGODB_URI`.
+
+Local install (Homebrew): `brew services start mongodb-community`. Or Docker:
+
+```bash
+docker run -d --name fabulari-mongo -p 27017:27017 mongo:7
+```
+
+Atlas: use the connection string from the cluster, with the database name `fabulari` in the path.
 
 ## Install and run
 
@@ -68,7 +86,9 @@ npm run dev
 - `npm start` — run with Node (`node server.js`)
 - `npm run dev` — same, but nodemon restarts on file changes
 - API: `http://localhost:3000`
-- Health check: `GET http://localhost:3000/api/health` → `{ "ok": true }`
+- Health check: `GET http://localhost:3000/api/health` → `{ "ok": true, "mongo": true }`
+- `npm run seed` — loads sample data into JSON files **and** Mongo
+- `npm run reset` — empties both; the next start requires bootstrap
 
 ### Client
 
@@ -113,11 +133,12 @@ The interface targets desktop and tablet, using Tailwind's `md` (768px), `lg` (1
 
 ## Phase 1 vs Phase 2 storage
 
-Phase 1 writes users, groups, and channels to JSON files in `server/data/`. Those files are **not** gitignored — they are part of the submission. Phase 2 will move persistence to MongoDB.
-
-Uploaded images are written to `server/uploads/`, which **is** gitignored.
+The live API still reads JSON in `server/data/` until the next slice. Mongo is
+connected on startup, and `npm run seed` / `npm run reset` already write both
+places. Uploaded images go to `server/uploads/`, which **is** gitignored.
 
 ## Documentation
 
-- [`Phase1.md`](./Phase1.md) — specification, design, and prototype documentation
+- [`docs/Phase1.md`](./docs/Phase1.md) — Phase 1 specification
+- [`docs/Phase2.md`](./docs/Phase2.md) — Phase 2 specification
 - [`docs/`](./docs) — storyboards and design documents
