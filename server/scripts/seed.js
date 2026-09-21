@@ -1,14 +1,12 @@
 // server/scripts/seed.js
-// `npm run seed` — restores the committed sample data.
-// Copies server/seed/*.json into server/data/ so the live JSON API still
-// works, and upserts the same documents into Mongo for Stage 0+.
+// `npm run seed` — restores the committed sample data into Mongo.
+// Source files live in server/seed/*.json; they are not the live store.
 //
 // Every seed account signs in with the password "Passw0rd1" (the example
 // password used in Phase1.md §6). The stored values are real bcrypt hashes.
 
 const fs = require("fs");
 const path = require("path");
-const { COLLECTIONS: JSON_COLLECTIONS, DATA_DIR } = require("../storage");
 const { COLLECTIONS, connect, collection, close } = require("../mongo");
 
 const SEED_DIR = path.join(__dirname, "..", "seed");
@@ -24,15 +22,6 @@ async function seedMongo() {
   }
 }
 
-function seedJson() {
-  for (const name of JSON_COLLECTIONS) {
-    const source = path.join(SEED_DIR, `${name}.json`);
-    fs.copyFileSync(source, path.join(DATA_DIR, `${name}.json`));
-    console.log(`Seeded ${name}.json`);
-  }
-}
-
-seedJson();
 seedMongo()
   .then(() => {
     console.log("Seed complete.");

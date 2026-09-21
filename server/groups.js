@@ -87,7 +87,7 @@ function parsePatch(body) {
   return { patch };
 }
 
-function applyPatch(group, body) {
+async function applyPatch(group, body) {
   const parsed = parsePatch(body);
   if (parsed.error) return parsed;
 
@@ -107,15 +107,15 @@ function applyPatch(group, body) {
     for (const user of removed) {
       removeFromGroup(group, user.id);
     }
-    save("users");
+    await save("users");
   }
 
   Object.assign(group, patch);
-  save("groups");
+  await save("groups");
   return { group, removedMembers: removed.map(toPublicUser) };
 }
 
-function removeMember(group, actor, targetId) {
+async function removeMember(group, actor, targetId) {
   if (!group.members.includes(targetId)) {
     return { status: 404, error: "User is not a member of this group." };
   }
@@ -128,12 +128,12 @@ function removeMember(group, actor, targetId) {
     return { status: 409, error: "This change would leave the group with no admin." };
   }
   removeFromGroup(group, targetId);
-  save("groups");
-  save("users");
+  await save("groups");
+  await save("users");
   return { ok: true };
 }
 
-function promote(group, targetId) {
+async function promote(group, targetId) {
   if (!group.members.includes(targetId)) {
     return { status: 404, error: "User is not a member of this group." };
   }
@@ -141,11 +141,11 @@ function promote(group, targetId) {
     return { status: 409, error: "User is already an admin of this group." };
   }
   group.admins.push(targetId);
-  save("groups");
+  await save("groups");
   return { ok: true };
 }
 
-function demote(group, targetId) {
+async function demote(group, targetId) {
   if (!group.admins.includes(targetId)) {
     return { status: 404, error: "User is not an admin of this group." };
   }
@@ -153,11 +153,11 @@ function demote(group, targetId) {
     return { status: 409, error: "This change would leave the group with no admin." };
   }
   group.admins = group.admins.filter((id) => id !== targetId);
-  save("groups");
+  await save("groups");
   return { ok: true };
 }
 
-function applyBan(group, actor, targetId, requestId) {
+async function applyBan(group, actor, targetId, requestId) {
   if (typeof requestId !== "string" || !requestId.trim()) {
     return { status: 400, error: "An approved USER_REPORT requestId is required." };
   }
@@ -187,8 +187,8 @@ function applyBan(group, actor, targetId, requestId) {
 
   removeFromGroup(group, targetId);
   group.bannedUsers.push(targetId);
-  save("groups");
-  save("users");
+  await save("groups");
+  await save("users");
   return { ok: true, request };
 }
 

@@ -36,10 +36,10 @@ router.get("/:id/rooms", requireGroupMember("id"), (req, res) => {
 
 // Direct create (Phase1 matrix: group admin may create a room). Members still
 // propose via ROOM_CREATE — an admin cannot approve their own request.
-router.post("/:id/rooms", requireGroupAdmin("id"), (req, res) => {
-  const result = createRoom(req.group, req.body ?? {});
+router.post("/:id/rooms", requireGroupAdmin("id"), async (req, res) => {
+  const result = await createRoom(req.group, req.body ?? {});
   if (result.error) return fail(res, result.status, result.error);
-  writeAudit(req.user, "ROOM_CREATED", `Room: ${result.room.name}`, `In group ${req.group.title}.`);
+  await writeAudit(req.user, "ROOM_CREATED", `Room: ${result.room.name}`, `In group ${req.group.title}.`);
   res.status(201).json({ room: result.room });
 });
 
@@ -47,22 +47,22 @@ router.get("/:id/members", requireGroupAdmin("id"), (req, res) => {
   res.json({ members: publicUsersByIds(req.group.members) });
 });
 
-router.delete("/:id/members/:userId", (req, res) => {
+router.delete("/:id/members/:userId", async (req, res) => {
   const group = db.groups.find((g) => g.id === req.params.id);
   if (!group) return fail(res, 404, "Group not found.");
-  const result = removeMember(group, req.user, req.params.userId);
+  const result = await removeMember(group, req.user, req.params.userId);
   if (result.error) return fail(res, result.status, result.error);
   res.status(204).end();
 });
 
-router.post("/:id/admins/:userId", requireGroupAdmin("id"), (req, res) => {
-  const result = promote(req.group, req.params.userId);
+router.post("/:id/admins/:userId", requireGroupAdmin("id"), async (req, res) => {
+  const result = await promote(req.group, req.params.userId);
   if (result.error) return fail(res, result.status, result.error);
   res.status(204).end();
 });
 
-router.delete("/:id/admins/:userId", requireGroupAdmin("id"), (req, res) => {
-  const result = demote(req.group, req.params.userId);
+router.delete("/:id/admins/:userId", requireGroupAdmin("id"), async (req, res) => {
+  const result = await demote(req.group, req.params.userId);
   if (result.error) return fail(res, result.status, result.error);
   res.status(204).end();
 });
@@ -71,10 +71,10 @@ router.get("/:id/bans", requireGroupAdmin("id"), (req, res) => {
   res.json({ bannedUsers: publicUsersByIds(req.group.bannedUsers) });
 });
 
-router.post("/:id/bans/:userId", requireGroupAdmin("id"), (req, res) => {
-  const result = applyBan(req.group, req.user, req.params.userId, req.body?.requestId);
+router.post("/:id/bans/:userId", requireGroupAdmin("id"), async (req, res) => {
+  const result = await applyBan(req.group, req.user, req.params.userId, req.body?.requestId);
   if (result.error) return fail(res, result.status, result.error);
-  writeAudit(
+  await writeAudit(
     req.user,
     "GROUP_BAN",
     `User: ${actorName(req.params.userId)}`,
@@ -101,15 +101,15 @@ router.get("/:id", (req, res) => {
   });
 });
 
-router.patch("/:id", requireGroupAdmin("id"), (req, res) => {
-  const result = applyPatch(req.group, req.body);
+router.patch("/:id", requireGroupAdmin("id"), async (req, res) => {
+  const result = await applyPatch(req.group, req.body);
   if (result.error) return fail(res, result.status, result.error);
   res.json({ group: result.group, removedMembers: result.removedMembers });
 });
 
 // Super admin only. The GROUP_DELETE request must already be approved;
 // approval itself does not remove the group (same pattern as SYSTEM_BAN).
-router.delete("/:id", requireSuperAdmin, (req, res) => {
+router.delete("/:id", requireSuperAdmin, async (req, res) => {
   const requestId = req.body?.requestId;
   if (typeof requestId !== "string" || !requestId.trim()) {
     return fail(res, 400, "An approved GROUP_DELETE requestId is required.");
@@ -131,8 +131,8 @@ router.delete("/:id", requireSuperAdmin, (req, res) => {
   if (!group) return fail(res, 404, "Group not found.");
 
   const title = group.title;
-  deleteGroupCascade(group.id, request.id);
-  writeAudit(
+  await deleteGroupCascade(group.id, request.id);
+  await writeAudit(
     req.user,
     "GROUP_DELETED",
     `Group: ${title}`,

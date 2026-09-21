@@ -19,7 +19,7 @@ function writeAudit(actor, type, targetLabel, detail = "") {
     detail,
     timestamp: new Date().toISOString(),
   });
-  save("auditLog");
+  return save("auditLog");
 }
 
 module.exports = { writeAudit };

@@ -21,7 +21,7 @@ A full-stack chat application for Griffith University 3813ICT Full Stack Develop
 | CORS | `cors` | 2.8.6 |
 | API reload | nodemon (dev only) | 3.1.14 |
 
-Phase 1 stores data in JSON files on the server. Phase 2 is moving that to MongoDB, then adding socket.io, image upload, and automated tests.
+Phase 2 stores data in MongoDB (native driver, no mongoose), then adds socket.io, image upload, and automated tests.
 
 ## Architecture at a glance
 
@@ -40,8 +40,8 @@ Fabulari/
       core/        guards, interceptors, models, services
       shared/      reusable presentational components and copied spartan UI
       features/    one folder per area (auth, profile, groups, rooms, requests, admin)
-  server/          Node + Express API
-    data/          JSON persistence files (users, groups, channels)
+  server/          Node + Express API (MongoDB collections loaded into memory)
+    seed/          Sample data imported by `npm run seed`
     uploads/       Uploaded profile images (not committed)
     server.js      Express entry point
   docs/            Storyboards, diagrams, and assignment spec
@@ -87,8 +87,8 @@ npm run dev
 - `npm run dev` — same, but nodemon restarts on file changes
 - API: `http://localhost:3000`
 - Health check: `GET http://localhost:3000/api/health` → `{ "ok": true, "mongo": true }`
-- `npm run seed` — loads sample data into JSON files **and** Mongo
-- `npm run reset` — empties both; the next start requires bootstrap
+- `npm run seed` — loads sample data into Mongo from `server/seed/`
+- `npm run reset` — empties Mongo; the next start requires bootstrap
 
 ### Client
 
@@ -131,11 +131,11 @@ No animation library is used. Transitions rely on Tailwind's `transition` utilit
 
 The interface targets desktop and tablet, using Tailwind's `md` (768px), `lg` (1024px) and `xl` (1280px) breakpoints. Below 768px the layout holds at its tablet arrangement.
 
-## Phase 1 vs Phase 2 storage
+## Storage
 
-The live API still reads JSON in `server/data/` until the next slice. Mongo is
-connected on startup, and `npm run seed` / `npm run reset` already write both
-places. Uploaded images go to `server/uploads/`, which **is** gitignored.
+The live API loads Mongo collections into memory on boot and writes a collection
+back after each change. `server/seed/*.json` is import-only. Uploaded images go
+to `server/uploads/`, which **is** gitignored.
 
 ## Documentation
 

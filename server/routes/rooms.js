@@ -36,22 +36,22 @@ router.get("/:id", (req, res) => {
   res.json({ room: req.room });
 });
 
-router.patch("/:id", (req, res) => {
+router.patch("/:id", async (req, res) => {
   if (!loadRoom(req, res)) return;
   if (!req.group.admins.includes(req.user.id)) {
     return fail(res, 403, "Group admin only.");
   }
-  const result = applyRoomPatch(req.room, req.body);
+  const result = await applyRoomPatch(req.room, req.body);
   if (result.error) return fail(res, result.status, result.error);
   res.json({ room: result.room });
 });
 
-router.delete("/:id", (req, res) => {
+router.delete("/:id", async (req, res) => {
   if (!loadRoom(req, res)) return;
   if (!req.group.admins.includes(req.user.id)) {
     return fail(res, 403, "Group admin only.");
   }
-  deleteRoom(req.room);
+  await deleteRoom(req.room);
   res.status(204).end();
 });
 

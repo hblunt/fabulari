@@ -81,14 +81,14 @@ router.get("/", (req, res) => {
   res.json({ requests: visibleRequests(req.user, type, status).map(withDisplay) });
 });
 
-router.post("/", (req, res) => {
+router.post("/", async (req, res) => {
   const { type, targetId, payload, reason } = req.body ?? {};
   const result = authoriseCreate(req.user, type, targetId ?? null, payload, reason);
   if (result.error) return fail(res, result.status, result.error);
 
   // Age-gated joins are rejected here so they never appear in an admin queue.
   if (type === "GROUP_JOIN" && ageFromDob(req.user.dateOfBirth) < result.group.ageLimit) {
-    const request = persistRequest(
+    const request = await persistRequest(
       buildRequest(req.user, type, result.targetId, result.payload, null, {
         status: "REJECTED",
         reason: `You must be at least ${result.group.ageLimit} to join this group.`,
@@ -98,13 +98,13 @@ router.post("/", (req, res) => {
     return res.status(201).json({ request: withDisplay(request) });
   }
 
-  const request = persistRequest(
+  const request = await persistRequest(
     buildRequest(req.user, type, result.targetId, result.payload, result.reason)
   );
   res.status(201).json({ request: withDisplay(request) });
 });
 
-router.post("/:id/approve", (req, res) => {
+router.post("/:id/approve", async (req, res) => {
   const request = db.requests.find((r) => r.id === req.params.id);
   if (!request) return fail(res, 404, "Request not found.");
   if (request.submittedBy === req.user.id) {
@@ -117,16 +117,16 @@ router.post("/:id/approve", (req, res) => {
     return fail(res, 403, "Not permitted to approve this request.");
   }
 
-  const outcome = applyApproval(req.user, request);
+  const outcome = await applyApproval(req.user, request);
   if (outcome?.error) return fail(res, outcome.status, outcome.error);
 
-  finalise(request, req.user, "APPROVED", request.reason);
+  await finalise(request, req.user, "APPROVED", request.reason);
   const body = { request: withDisplay(request) };
   if (outcome.created) body.created = outcome.created;
   res.json(body);
 });
 
-router.post("/:id/reject", (req, res) => {
+router.post("/:id/reject", async (req, res) => {
   const reason = req.body?.reason;
   if (typeof reason !== "string" || !reason.trim()) {
     return fail(res, 400, "A rejection reason is required.");
@@ -144,8 +144,8 @@ router.post("/:id/reject", (req, res) => {
     return fail(res, 403, "Not permitted to reject this request.");
   }
 
-  applyRejection(req.user, request, reason.trim());
-  finalise(request, req.user, "REJECTED", reason.trim());
+  await applyRejection(req.user, request, reason.trim());
+  await finalise(request, req.user, "REJECTED", reason.trim());
   res.json({ request: withDisplay(request) });
 });
 

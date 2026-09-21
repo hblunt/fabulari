@@ -251,9 +251,9 @@ function authoriseCreate(user, type, targetId, payload, reason) {
   return { status: 400, error: "Unknown request type." };
 }
 
-function persistRequest(record) {
+async function persistRequest(record) {
   db.requests.push(record);
-  save("requests");
+  await save("requests");
   return record;
 }
 
@@ -272,39 +272,39 @@ function buildRequest(user, type, targetId, payload, reason, extras = {}) {
   };
 }
 
-function addMembership(userId, group) {
+async function addMembership(userId, group) {
   if (!group.members.includes(userId)) group.members.push(userId);
   const user = db.users.find((u) => u.id === userId);
   if (user && !user.groups.includes(group.id)) user.groups.push(group.id);
-  save("groups");
-  save("users");
+  await save("groups");
+  await save("users");
 }
 
 function requestConcernsGroup(request, groupId) {
   return groupIdFor(request) === groupId;
 }
 
-function deleteGroupCascade(groupId, keepRequestId) {
+async function deleteGroupCascade(groupId, keepRequestId) {
   db.rooms = db.rooms.filter((r) => r.groupId !== groupId);
-  save("rooms");
+  await save("rooms");
 
   db.requests = db.requests.filter((r) => {
     if (r.id === keepRequestId) return true;
     if (r.status !== "PENDING") return true;
     return !requestConcernsGroup(r, groupId);
   });
-  save("requests");
+  await save("requests");
 
   for (const user of db.users) {
     user.groups = user.groups.filter((id) => id !== groupId);
   }
-  save("users");
+  await save("users");
 
   db.groups = db.groups.filter((g) => g.id !== groupId);
-  save("groups");
+  await save("groups");
 }
 
-function applyApproval(actor, request) {
+async function applyApproval(actor, request) {
   let created = undefined;
 
   if (request.type === "GROUP_CREATE") {
@@ -321,16 +321,16 @@ function applyApproval(actor, request) {
       createdAt: new Date().toISOString(),
     };
     db.groups.push(group);
-    save("groups");
-    addMembership(request.submittedBy, group);
+    await save("groups");
+    await addMembership(request.submittedBy, group);
     created = group;
-    writeAudit(actor, "GROUP_CREATED", `Group: ${group.title}`, `Requested by ${actorName(request.submittedBy)}.`);
+    await writeAudit(actor, "GROUP_CREATED", `Group: ${group.title}`, `Requested by ${actorName(request.submittedBy)}.`);
   }
 
   if (request.type === "GROUP_DELETE") {
     const group = db.groups.find((g) => g.id === request.targetId);
     const title = group ? group.title : request.targetId;
-    writeAudit(
+    await writeAudit(
       actor,
       "GROUP_DELETE_APPROVED",
       `Group: ${title}`,
@@ -344,21 +344,21 @@ function applyApproval(actor, request) {
     if (group.bannedUsers.includes(request.submittedBy)) {
       return { status: 409, error: "This user is banned from the group." };
     }
-    addMembership(request.submittedBy, group);
-    writeAudit(actor, "GROUP_JOIN_APPROVED", `Group: ${group.title}`, `${actorName(request.submittedBy)} joined.`);
+    await addMembership(request.submittedBy, group);
+    await writeAudit(actor, "GROUP_JOIN_APPROVED", `Group: ${group.title}`, `${actorName(request.submittedBy)} joined.`);
   }
 
   if (request.type === "ROOM_CREATE") {
     const group = db.groups.find((g) => g.id === request.payload.groupId);
     if (!group) return { status: 404, error: "Group not found." };
-    const result = createRoom(group, request.payload);
+    const result = await createRoom(group, request.payload);
     if (result.error) return result;
     created = result.room;
-    writeAudit(actor, "ROOM_CREATED", `Room: ${result.room.name}`, `In group ${group.title}.`);
+    await writeAudit(actor, "ROOM_CREATED", `Room: ${result.room.name}`, `In group ${group.title}.`);
   }
 
   if (request.type === "USER_REPORT") {
-    writeAudit(
+    await writeAudit(
       actor,
       "USER_REPORT_APPROVED",
       `User: ${actorName(request.targetId)}`,
@@ -367,7 +367,7 @@ function applyApproval(actor, request) {
   }
 
   if (request.type === "SYSTEM_BAN") {
-    writeAudit(
+    await writeAudit(
       actor,
       "SYSTEM_BAN_APPROVED",
       `User: ${actorName(request.targetId)}`,
@@ -378,7 +378,7 @@ function applyApproval(actor, request) {
   return { created };
 }
 
-function applyRejection(actor, request, reason) {
+async function applyRejection(actor, request, reason) {
   const labels = {
     GROUP_CREATE: `Group request: ${request.payload?.title ?? ""}`,
     GROUP_DELETE: `Group: ${db.groups.find((g) => g.id === request.targetId)?.title ?? request.targetId}`,
@@ -387,7 +387,7 @@ function applyRejection(actor, request, reason) {
     USER_REPORT: `User: ${actorName(request.targetId)}`,
     SYSTEM_BAN: `User: ${actorName(request.targetId)}`,
   };
-  writeAudit(actor, `${request.type}_REJECTED`, labels[request.type] ?? request.type, reason);
+  await writeAudit(actor, `${request.type}_REJECTED`, labels[request.type] ?? request.type, reason);
 }
 
 function actorName(userId) {
@@ -395,12 +395,12 @@ function actorName(userId) {
   return user ? `${user.firstName} ${user.lastName}` : userId;
 }
 
-function finalise(request, actor, status, reason) {
+async function finalise(request, actor, status, reason) {
   request.status = status;
   request.actionedBy = actor.id;
   request.actionedAt = new Date().toISOString();
   if (reason !== undefined) request.reason = reason;
-  save("requests");
+  await save("requests");
   return request;
 }
 
