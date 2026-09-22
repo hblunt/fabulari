@@ -2,11 +2,13 @@
 // Express entry point. Mongo is the source of truth: connect, load collections
 // into memory, then listen. A missing database is a hard start failure.
 
+const http = require("http");
 const express = require("express");
 const cors = require("cors");
 const { load } = require("./storage");
 const { connect, isConnected } = require("./mongo");
 const { identifyUser } = require("./middleware");
+const { attachSockets } = require("./sockets");
 const bootstrapRouter = require("./routes/bootstrap");
 const authRouter = require("./routes/auth");
 const requestsRouter = require("./routes/requests");
@@ -49,7 +51,9 @@ app.use("/api/audit", auditRouter);
 async function start() {
   await connect();
   await load();
-  app.listen(PORT, () => {
+  const httpServer = http.createServer(app);
+  attachSockets(httpServer);
+  httpServer.listen(PORT, () => {
     console.log(`Server listening on http://localhost:${PORT}`);
   });
 }

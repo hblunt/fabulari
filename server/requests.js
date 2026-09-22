@@ -9,6 +9,7 @@ const { db, save } = require("./storage");
 const { newId } = require("./ids");
 const { writeAudit } = require("./audit");
 const { createRoom } = require("./rooms");
+const { deleteMessagesForRoom } = require("./messages");
 
 const REQUEST_TYPES = [
   "GROUP_CREATE",
@@ -285,6 +286,10 @@ function requestConcernsGroup(request, groupId) {
 }
 
 async function deleteGroupCascade(groupId, keepRequestId) {
+  const goneRooms = db.rooms.filter((r) => r.groupId === groupId);
+  for (const room of goneRooms) {
+    await deleteMessagesForRoom(room.id);
+  }
   db.rooms = db.rooms.filter((r) => r.groupId !== groupId);
   await save("rooms");
 

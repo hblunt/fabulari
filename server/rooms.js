@@ -4,6 +4,7 @@
 
 const { db, save } = require("./storage");
 const { newId } = require("./ids");
+const { deleteMessagesForRoom } = require("./messages");
 
 async function createRoom(group, { name, description }) {
   if (typeof name !== "string" || !name.trim()) {
@@ -64,6 +65,7 @@ async function applyRoomPatch(room, body) {
 }
 
 async function deleteRoom(room) {
+  await deleteMessagesForRoom(room.id);
   db.rooms = db.rooms.filter((r) => r.id !== room.id);
   await save("rooms");
 }

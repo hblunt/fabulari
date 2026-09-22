@@ -1,7 +1,6 @@
 // client/src/app/features/rooms/message-composer.ts
-// Text plus optional image attach. Limits are stated here; nothing is uploaded
-// (no message endpoints in Phase 1). A valid file still appears locally as an
-// IMAGE row so the UI can be marked.
+// Text plus optional image attach. Limits are stated here; image send waits
+// for the upload route (Stage 3).
 
 import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -74,6 +73,6 @@ export class MessageComposer {
       this.notify.error('Images must be 2MB or smaller.');
       return;
     }
-    this.sent.emit({ type: 'IMAGE', content: file.name });
+    this.notify.info('Image messages will be available once upload is wired.');
   }
 }

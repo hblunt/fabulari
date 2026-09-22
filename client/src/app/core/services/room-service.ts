@@ -5,7 +5,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import type { Room } from '../models';
+import type { Message, Room } from '../models';
 
 @Injectable({ providedIn: 'root' })
 export class RoomService {
@@ -15,6 +15,12 @@ export class RoomService {
     return this.http
       .get<{ rooms: Room[] }>(`/api/groups/${groupId}/rooms`)
       .pipe(map((res) => res.rooms));
+  }
+
+  listMessages(roomId: string): Observable<Message[]> {
+    return this.http
+      .get<{ messages: Message[] }>(`/api/rooms/${roomId}/messages`)
+      .pipe(map((res) => res.messages));
   }
 
   create(groupId: string, body: { name: string; description?: string }): Observable<Room> {

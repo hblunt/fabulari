@@ -2,7 +2,7 @@
 // Ordered stream of messages and join/leave notices.
 
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import type { ChatRow } from './mock-messages';
+import type { ChatRow } from './chat-row';
 import { MessageItem } from './message-item';
 import { SystemNotice } from './system-notice';
 

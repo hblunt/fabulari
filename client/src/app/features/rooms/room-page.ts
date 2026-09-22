@@ -1,20 +1,30 @@
 // client/src/app/features/rooms/room-page.ts
-// Chat view (wf-07/08). Real rooms come from the API. Messages and presence
-// are mock data — no sockets and no message endpoints in Phase 1.
+// Chat view (wf-07/08). Last five messages come from GET; the rest of the
+// stream is this browser's local history plus live socket events.
 
 import { NgClass } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { HlmButton } from '@spartan-ng/helm/button';
-import type { Group, Message, Room } from '../../core/models';
+import type { Group, Message, PresencePerson, Room } from '../../core/models';
 import { AuthService } from '../../core/services/auth-service';
 import { GroupService } from '../../core/services/group-service';
+import { forgetMessage, rememberMessages } from '../../core/services/message-history';
 import { NotificationService } from '../../core/services/notification-service';
 import { RoomService } from '../../core/services/room-service';
+import { SocketService } from '../../core/services/socket-service';
+import { messagesToRows, type ChatRow } from './chat-row';
 import { MessageComposer, type ComposerSend } from './message-composer';
 import { MessageList } from './message-list';
-import { MOCK_PRESENCE, mockRowsFor, type ChatRow } from './mock-messages';
 import { RoomPresenceList } from './room-presence-list';
 
 @Component({
@@ -39,7 +49,7 @@ import { RoomPresenceList } from './room-presence-list';
           <p class="min-w-0 flex-1 font-medium"># {{ room()?.name }}</p>
           <button hlmBtn variant="outline" size="sm" type="button" (click)="toggleRooms()">Rooms ▼</button>
           <button hlmBtn variant="outline" size="sm" type="button" (click)="togglePresence()">
-            In room {{ presence.length }}
+            In room {{ presence().length }}
           </button>
         </div>
 
@@ -90,7 +100,7 @@ import { RoomPresenceList } from './room-presence-list';
           </div>
 
           <aside [class]="sideClass(presenceOpen(), 'right')">
-            <app-room-presence-list [people]="presence" [currentUserId]="currentUserId()" />
+            <app-room-presence-list [people]="presence()" [currentUserId]="currentUserId()" />
           </aside>
         </div>
       </section>
@@ -100,29 +110,55 @@ import { RoomPresenceList } from './room-presence-list';
 export class RoomPage {
   private readonly groupsApi = inject(GroupService);
   private readonly roomsApi = inject(RoomService);
+  private readonly sockets = inject(SocketService);
   private readonly auth = inject(AuthService);
   private readonly notify = inject(NotificationService);
   private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly group = signal<Group | null>(null);
   protected readonly rooms = signal<Room[]>([]);
   protected readonly roomId = signal('');
   protected readonly rows = signal<ChatRow[]>([]);
+  protected readonly presence = signal<PresencePerson[]>([]);
   protected readonly roomsOpen = signal(false);
   protected readonly presenceOpen = signal(false);
-  protected readonly presence = MOCK_PRESENCE;
   protected readonly currentUserId = computed(() => this.auth.currentUser()?.id ?? '');
-
   protected readonly room = computed(() => this.rooms().find((r) => r.id === this.roomId()) ?? null);
 
+  private loadGen = 0;
+
   constructor() {
-    this.route.paramMap.subscribe((params) => {
+    this.destroyRef.onDestroy(() => this.sockets.leave());
+
+    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
       const groupId = params.get('groupId') ?? '';
       const roomId = params.get('roomId') ?? '';
+      this.sockets.leave();
       this.roomId.set(roomId);
-      this.rows.set(mockRowsFor(roomId));
+      this.rows.set([]);
+      this.presence.set([]);
       this.closePanels();
-      this.load(groupId);
+      this.sockets.join(roomId);
+      this.load(groupId, roomId);
+    });
+
+    this.sockets.messageNew$.pipe(takeUntilDestroyed()).subscribe(({ message }) => {
+      if (message.roomId !== this.roomId()) return;
+      this.appendMessage(message);
+    });
+    this.sockets.messageDeleted$.pipe(takeUntilDestroyed()).subscribe(({ messageId }) => {
+      forgetMessage(this.roomId(), messageId);
+      this.rows.update((rows) => rows.filter((row) => row.kind === 'notice' || row.message.id !== messageId));
+    });
+    this.sockets.presenceUpdate$.pipe(takeUntilDestroyed()).subscribe((payload) => {
+      if (payload.roomId === this.roomId()) this.presence.set(payload.users);
+    });
+    this.sockets.presenceJoined$.pipe(takeUntilDestroyed()).subscribe((payload) => {
+      this.appendNotice(payload, 'joined the room');
+    });
+    this.sockets.presenceLeft$.pipe(takeUntilDestroyed()).subscribe((payload) => {
+      this.appendNotice(payload, 'left the room');
     });
   }
 
@@ -143,7 +179,6 @@ export class RoomPage {
 
   protected sideClass(open: boolean, side: 'left' | 'right'): string {
     const place = side === 'left' ? 'left-0' : 'right-0';
-    // Presence is wider so You / Group admin chips stay on one line.
     const width = side === 'left' ? 'w-56' : 'w-72';
     const card = `flex ${width} shrink-0 flex-col overflow-hidden rounded-xl border bg-background p-4`;
     if (open) {
@@ -153,36 +188,48 @@ export class RoomPage {
   }
 
   protected onSend(payload: ComposerSend): void {
-    const user = this.auth.currentUser();
-    if (!user) return;
-    const message: Message = {
-      id: `m-local-${Date.now()}`,
-      roomId: this.roomId(),
-      authorId: user.id,
-      authorName: `${user.firstName} ${user.lastName}`,
-      authorPicture: user.profilePicture,
-      type: payload.type,
-      content: payload.content,
-      timestamp: new Date().toISOString(),
-    };
-    const isAdmin = this.group()?.admins.includes(user.id) ?? false;
-    this.rows.update((rows) => [...rows, { kind: 'message', message, isAdmin }]);
+    if (payload.type !== 'TEXT') return;
+    this.sockets.send(this.roomId(), 'TEXT', payload.content);
   }
 
   protected removeMessage(id: string): void {
-    this.rows.update((rows) => rows.filter((row) => row.kind === 'notice' || row.message.id !== id));
+    this.sockets.delete(this.roomId(), id);
   }
 
-  private load(groupId: string): void {
+  private load(groupId: string, roomId: string): void {
+    const gen = ++this.loadGen;
     forkJoin({
       detail: this.groupsApi.get(groupId),
       rooms: this.roomsApi.list(groupId),
+      messages: this.roomsApi.listMessages(roomId),
     }).subscribe({
-      next: ({ detail, rooms }) => {
+      next: ({ detail, rooms, messages }) => {
+        if (gen !== this.loadGen || this.roomId() !== roomId) return;
         this.group.set(detail.group);
         this.rooms.set(rooms);
+        this.mergeMessages(messages);
       },
       error: (err) => this.notify.error(err.error?.error ?? 'Could not load this room.'),
     });
+  }
+
+  private mergeMessages(incoming: Message[]): void {
+    const merged = rememberMessages(this.roomId(), incoming);
+    const notices = this.rows().filter((row) => row.kind === 'notice');
+    this.rows.set([...messagesToRows(merged, this.group()?.admins ?? []), ...notices]);
+  }
+
+  private appendMessage(message: Message): void {
+    rememberMessages(this.roomId(), [message]);
+    const already = this.rows().some((row) => row.kind === 'message' && row.message.id === message.id);
+    if (already) return;
+    const isAdmin = this.group()?.admins.includes(message.authorId) ?? false;
+    this.rows.update((rows) => [...rows, { kind: 'message', message, isAdmin }]);
+  }
+
+  private appendNotice(payload: { roomId: string; userName: string }, verb: string): void {
+    if (payload.roomId !== this.roomId()) return;
+    const notice = { id: `n-${Date.now()}-${payload.userName}`, text: `${payload.userName} ${verb}` };
+    this.rows.update((rows) => [...rows, { kind: 'notice', notice }]);
   }
 }

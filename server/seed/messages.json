@@ -1,0 +1,62 @@
+[
+  {
+    "id": "m-seed01",
+    "roomId": "r-70efdf2e",
+    "authorId": "u-8f14e45f",
+    "authorName": "Holly Bennett",
+    "authorPicture": null,
+    "type": "TEXT",
+    "content": "Has anyone seen the new one yet?",
+    "timestamp": "2026-08-24T10:10:00.000Z"
+  },
+  {
+    "id": "m-seed02",
+    "roomId": "r-70efdf2e",
+    "authorId": "u-6512bd43",
+    "authorName": "Marcus Reid",
+    "authorPicture": null,
+    "type": "TEXT",
+    "content": "Friday night. First hour drags.",
+    "timestamp": "2026-08-24T10:12:00.000Z"
+  },
+  {
+    "id": "m-seed03",
+    "roomId": "r-70efdf2e",
+    "authorId": "u-c20ad4d7",
+    "authorName": "Priya Nair",
+    "authorPicture": null,
+    "type": "TEXT",
+    "content": "Worth it for the last act though.",
+    "timestamp": "2026-08-24T10:14:00.000Z"
+  },
+  {
+    "id": "m-seed04",
+    "roomId": "r-70efdf2e",
+    "authorId": "u-8f14e45f",
+    "authorName": "Holly Bennett",
+    "authorPicture": null,
+    "type": "TEXT",
+    "content": "I might wait for streaming.",
+    "timestamp": "2026-08-24T10:16:00.000Z"
+  },
+  {
+    "id": "m-seed05",
+    "roomId": "r-70efdf2e",
+    "authorId": "u-6512bd43",
+    "authorName": "Marcus Reid",
+    "authorPicture": null,
+    "type": "TEXT",
+    "content": "Fair. It's loud, not subtle.",
+    "timestamp": "2026-08-24T10:18:00.000Z"
+  },
+  {
+    "id": "m-seed06",
+    "roomId": "r-70efdf2e",
+    "authorId": "u-c20ad4d7",
+    "authorName": "Priya Nair",
+    "authorPicture": null,
+    "type": "TEXT",
+    "content": "Saving this for the group notes.",
+    "timestamp": "2026-08-24T10:20:00.000Z"
+  }
+]

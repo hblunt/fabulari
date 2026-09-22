@@ -1,8 +1,7 @@
 // server/ids.js
 // ID generator. Every entity carries a UUID prefixed by its type (§4):
-// u- user, g- group, r- room, q- request, b- banned account, a- audit entry.
-// The prefix makes IDs self-describing in the JSON files and in logs, which
-// matters when six collections cross-reference each other by ID alone.
+// u- user, g- group, r- room, q- request, b- banned account, a- audit entry,
+// m- message. The prefix makes IDs self-describing in logs.
 
 const crypto = require("crypto");
 
@@ -13,6 +12,7 @@ const PREFIXES = {
   request: "q",
   bannedAccount: "b",
   auditEntry: "a",
+  message: "m",
 };
 
 // randomUUID gives collision-safe IDs without another dependency.
