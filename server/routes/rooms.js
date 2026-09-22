@@ -1,5 +1,6 @@
 // server/routes/rooms.js
-// Room read, edit and delete by ID (Phase1.md §6). Create is POST
+// Room read, edit and delete by ID (Phase1.md §6). GET :id/messages returns
+// the last five stored messages (Phase2.md §6). Create is POST
 // /api/groups/:id/rooms for group admins; members still use ROOM_CREATE.
 
 const express = require("express");
@@ -7,6 +8,7 @@ const { db } = require("../storage");
 const { fail } = require("../errors");
 const { requireAuth } = require("../middleware");
 const { applyRoomPatch, deleteRoom } = require("../rooms");
+const { lastFive } = require("../messages");
 
 const router = express.Router();
 
@@ -27,6 +29,14 @@ function loadRoom(req, res) {
   req.group = group;
   return room;
 }
+
+router.get("/:id/messages", (req, res) => {
+  if (!loadRoom(req, res)) return;
+  if (!req.group.members.includes(req.user.id)) {
+    return fail(res, 403, "Members of this group only.");
+  }
+  res.json({ messages: lastFive(req.room.id) });
+});
 
 router.get("/:id", (req, res) => {
   if (!loadRoom(req, res)) return;
