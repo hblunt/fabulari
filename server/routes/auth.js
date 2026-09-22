@@ -16,7 +16,7 @@ const {
 
 const router = express.Router();
 
-router.post("/register", (req, res) => {
+router.post("/register", async (req, res) => {
   const problem = validateNewUser(req.body);
   if (problem) return fail(res, 400, problem);
 
@@ -30,7 +30,7 @@ router.post("/register", (req, res) => {
     return fail(res, 409, "This email address cannot be used.");
   }
 
-  const user = createUser(req.body, "USER");
+  const user = await createUser(req.body, "USER");
   res.status(201).json({ user: toPublicUser(user) });
 });
 

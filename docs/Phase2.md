@@ -553,21 +553,11 @@ a user would blank out their history in the log.
 
 ### Server-side persistence
 
-Phase 1 persists to JSON files in `server/data/`, one file per entity, each
-holding a top-level array of records:
-
-```
-server/data/
-├── users.json
-├── groups.json
-├── rooms.json
-├── requests.json
-├── bannedAccounts.json
-└── auditLog.json
-```
-
-Each file is read into memory once at server start and written back in full
-after any mutation, so the on-disk state always matches the running state.
+Phase 2 persists to MongoDB collections (`users`, `groups`, `rooms`,
+`requests`, `bannedAccounts`, `auditLog`, `messages`) using the native driver
+(not mongoose). Each collection is loaded into memory once at server start and
+written back in full after any mutation, so the database always matches the
+running state. `server/seed/*.json` is sample data for `npm run seed` only.
 
 Uploaded profile pictures are written to `server/uploads/` and only the filename
 is stored on the user record.

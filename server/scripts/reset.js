@@ -1,19 +1,9 @@
 // server/scripts/reset.js
-// `npm run reset` — empties JSON data files and Mongo collections.
+// `npm run reset` — empties Mongo collections.
 // With no users the client's bootstrap check comes back { required: true },
 // so a reset is also how you re-run first-time onboarding.
 
-const fs = require("fs");
-const path = require("path");
-const { COLLECTIONS: JSON_COLLECTIONS, DATA_DIR } = require("../storage");
 const { COLLECTIONS, connect, collection, close } = require("../mongo");
-
-function resetJson() {
-  for (const name of JSON_COLLECTIONS) {
-    fs.writeFileSync(path.join(DATA_DIR, `${name}.json`), "[]\n");
-    console.log(`Emptied ${name}.json`);
-  }
-}
 
 async function resetMongo() {
   await connect();
@@ -23,7 +13,6 @@ async function resetMongo() {
   }
 }
 
-resetJson();
 resetMongo()
   .then(() => {
     console.log("Reset complete. The next app start will require bootstrap.");

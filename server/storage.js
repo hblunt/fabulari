@@ -1,48 +1,32 @@
 // server/storage.js
-// In-memory store backed by JSON files (Phase1.md §4 "Server-side persistence").
-// Every collection is read into memory once at startup; after any mutation the
-// whole file is written back, so the disk always matches the running state.
-// Phase 2 replaces this module with MongoDB — nothing else should touch the fs.
+// In-memory store backed by MongoDB. Same shape as Phase 1: collections are
+// loaded once at startup, handlers mutate db.*, then save() rewrites that
+// collection. Mongo's _id is stripped so the rest of the app still uses `id`.
 
-const fs = require("fs");
-const path = require("path");
+const { COLLECTIONS, collection } = require("./mongo");
 
-const DATA_DIR = path.join(__dirname, "data");
-
-// One file per entity, each holding a top-level array (§4).
-const COLLECTIONS = [
-  "users",
-  "groups",
-  "rooms",
-  "requests",
-  "bannedAccounts",
-  "auditLog",
-];
-
-// The single in-memory copy of the database. Route handlers read and mutate
-// these arrays directly, then call save() to flush the change to disk.
 const db = {};
 
-function fileFor(collection) {
-  return path.join(DATA_DIR, `${collection}.json`);
+function withoutMongoId(doc) {
+  const { _id, ...rest } = doc;
+  return rest;
 }
 
-// Load every collection at startup. A missing or corrupt file is a setup
-// error, so failing loudly here beats limping on with silent data loss.
-function load() {
+async function load() {
   for (const name of COLLECTIONS) {
-    db[name] = JSON.parse(fs.readFileSync(fileFor(name), "utf8"));
+    const docs = await collection(name).find().toArray();
+    db[name] = docs.map(withoutMongoId);
   }
 }
 
-// Write one collection back in full. Files are small in Phase 1, so a full
-// rewrite is simpler and safer than tracking partial diffs.
-function save(collection) {
-  if (!COLLECTIONS.includes(collection)) {
-    throw new Error(`Unknown collection: ${collection}`);
+async function save(name) {
+  if (!COLLECTIONS.includes(name)) {
+    throw new Error(`Unknown collection: ${name}`);
   }
-  // Two-space indent keeps the committed files readable in the marking repo.
-  fs.writeFileSync(fileFor(collection), JSON.stringify(db[collection], null, 2) + "\n");
+  const col = collection(name);
+  await col.deleteMany({});
+  const docs = (db[name] ?? []).map(withoutMongoId);
+  if (docs.length > 0) await col.insertMany(docs);
 }
 
-module.exports = { db, load, save, COLLECTIONS, DATA_DIR };
+module.exports = { db, load, save, COLLECTIONS };

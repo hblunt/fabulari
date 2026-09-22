@@ -5,7 +5,7 @@
 const { db, save } = require("./storage");
 const { newId } = require("./ids");
 
-function createRoom(group, { name, description }) {
+async function createRoom(group, { name, description }) {
   if (typeof name !== "string" || !name.trim()) {
     return { status: 400, error: "Name is required." };
   }
@@ -21,7 +21,7 @@ function createRoom(group, { name, description }) {
   const desc = description?.trim();
   if (desc) room.description = desc;
   db.rooms.push(room);
-  save("rooms");
+  await save("rooms");
   return { room };
 }
 
@@ -50,7 +50,7 @@ function parseRoomPatch(body) {
   return { patch };
 }
 
-function applyRoomPatch(room, body) {
+async function applyRoomPatch(room, body) {
   const parsed = parseRoomPatch(body);
   if (parsed.error) return parsed;
 
@@ -59,13 +59,13 @@ function applyRoomPatch(room, body) {
     delete parsed.patch.description;
   }
   Object.assign(room, parsed.patch);
-  save("rooms");
+  await save("rooms");
   return { room };
 }
 
-function deleteRoom(room) {
+async function deleteRoom(room) {
   db.rooms = db.rooms.filter((r) => r.id !== room.id);
-  save("rooms");
+  await save("rooms");
 }
 
 module.exports = { createRoom, applyRoomPatch, deleteRoom };

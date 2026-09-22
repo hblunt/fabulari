@@ -1,7 +1,6 @@
 // server/server.js
-// Express entry point. JSON files still back the live API (Stage 1 will
-// switch that to Mongo). On boot we connect to Mongo so seed/reset and the
-// health check have a real database, and so a missing Mongo is obvious.
+// Express entry point. Mongo is the source of truth: connect, load collections
+// into memory, then listen. A missing database is a hard start failure.
 
 const express = require("express");
 const cors = require("cors");
@@ -16,10 +15,6 @@ const roomsRouter = require("./routes/rooms");
 const usersRouter = require("./routes/users");
 const bannedAccountsRouter = require("./routes/banned-accounts");
 const auditRouter = require("./routes/audit");
-
-// Read every JSON collection into memory before accepting requests, so route
-// handlers can treat db.* arrays as the single source of truth.
-load();
 
 const app = express();
 const PORT = 3000;
@@ -53,6 +48,7 @@ app.use("/api/audit", auditRouter);
 
 async function start() {
   await connect();
+  await load();
   app.listen(PORT, () => {
     console.log(`Server listening on http://localhost:${PORT}`);
   });

@@ -54,7 +54,7 @@ function normaliseEmail(email) {
 }
 
 // Creates and persists a user. Assumes the payload has passed validateNewUser.
-function createUser({ firstName, lastName, dateOfBirth, email, password }, role) {
+async function createUser({ firstName, lastName, dateOfBirth, email, password }, role) {
   const user = {
     id: newId("user"),
     email: normaliseEmail(email),
@@ -68,7 +68,7 @@ function createUser({ firstName, lastName, dateOfBirth, email, password }, role)
     createdAt: new Date().toISOString(),
   };
   db.users.push(user);
-  save("users");
+  await save("users");
   return user;
 }
 
@@ -136,7 +136,7 @@ function requesterLabel(userId) {
 // Shared cascade for ban-delete and self-delete: appoint a successor where
 // they were sole admin, strip them from every group, drop emptied groups,
 // and clear pending requests they submitted or were named in.
-function removeUserFromSystem(user, keepRequestId) {
+async function removeUserFromSystem(user, keepRequestId) {
   const userId = user.id;
   const appointed = [];
   for (const group of db.groups) {
@@ -158,12 +158,12 @@ function removeUserFromSystem(user, keepRequestId) {
     group.admins = group.admins.filter((id) => id !== userId);
     group.bannedUsers = group.bannedUsers.filter((id) => id !== userId);
   }
-  save("groups");
+  await save("groups");
 
   const emptiedGroups = db.groups.filter((g) => g.members.length === 0);
   const emptiedTitles = emptiedGroups.map((g) => g.title);
   for (const group of emptiedGroups) {
-    deleteGroupCascade(group.id, keepRequestId);
+    await deleteGroupCascade(group.id, keepRequestId);
   }
 
   db.requests = db.requests.filter((r) => {
@@ -171,17 +171,17 @@ function removeUserFromSystem(user, keepRequestId) {
     if (r.status !== "PENDING") return true;
     return r.submittedBy !== userId && r.targetId !== userId;
   });
-  save("requests");
+  await save("requests");
 
   const snapshot = { firstName: user.firstName, lastName: user.lastName, email: user.email };
   db.users = db.users.filter((u) => u.id !== userId);
-  save("users");
+  await save("users");
   return { snapshot, emptiedGroups: emptiedTitles, appointed };
 }
 
 // Super-admin hard-delete after an approved SYSTEM_BAN. The tombstone is
 // written first so the email stays blacklisted even if a later step fails.
-function applyUserDelete(userId, requestId) {
+async function applyUserDelete(userId, requestId) {
   if (typeof requestId !== "string" || !requestId.trim()) {
     return { status: 400, error: "An approved SYSTEM_BAN requestId is required." };
   }
@@ -214,22 +214,22 @@ function applyUserDelete(userId, requestId) {
     requestedBy: requesterLabel(request.submittedBy),
   };
   db.bannedAccounts.push(tombstone);
-  save("bannedAccounts");
+  await save("bannedAccounts");
 
-  const cascade = removeUserFromSystem(user, request.id);
+  const cascade = await removeUserFromSystem(user, request.id);
   return { ok: true, request, user: cascade.snapshot, tombstone, emptiedGroups: cascade.emptiedGroups, appointed: cascade.appointed };
 }
 
 // Voluntary account removal. Not a ban: the email can be registered again.
-function applySelfDelete(user) {
+async function applySelfDelete(user) {
   if (user.role === "SUPER_ADMIN") {
     return { status: 403, error: "The super admin cannot be deleted." };
   }
-  const cascade = removeUserFromSystem(user, null);
+  const cascade = await removeUserFromSystem(user, null);
   return { ok: true, user: cascade.snapshot, emptiedGroups: cascade.emptiedGroups, appointed: cascade.appointed };
 }
 
-function applyMePatch(user, body) {
+async function applyMePatch(user, body) {
   if (!body || typeof body !== "object") {
     return { status: 400, error: "No valid fields to update." };
   }
@@ -263,11 +263,11 @@ function applyMePatch(user, body) {
     return { status: 400, error: "No valid fields to update." };
   }
   Object.assign(user, patch);
-  save("users");
+  await save("users");
   return { user };
 }
 
-function applyPasswordChange(user, body) {
+async function applyPasswordChange(user, body) {
   const currentPassword = body?.currentPassword;
   const newPassword = body?.newPassword;
   if (typeof currentPassword !== "string" || typeof newPassword !== "string") {
@@ -279,7 +279,7 @@ function applyPasswordChange(user, body) {
   const problem = validatePassword(newPassword);
   if (problem) return { status: 400, error: problem };
   user.passwordHash = bcrypt.hashSync(newPassword, BCRYPT_ROUNDS);
-  save("users");
+  await save("users");
   return { ok: true };
 }
 

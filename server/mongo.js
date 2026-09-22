@@ -1,8 +1,7 @@
 // server/mongo.js
 // Native MongoDB driver connection (Phase 2 Stage 0). One client, one database,
 // named collections. Mongoose is not used — the assignment forbids it.
-// The live API still reads JSON until Stage 1; this module is the connection
-// seed/reset/health use, and Stage 1 will switch storage over to it.
+// The live API loads these collections into memory on boot (storage.js).
 
 const fs = require("fs");
 const path = require("path");

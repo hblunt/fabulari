@@ -17,22 +17,22 @@ router.get("/me", (req, res) => {
   res.json({ user: toPublicUser(req.user) });
 });
 
-router.patch("/me/password", (req, res) => {
-  const result = applyPasswordChange(req.user, req.body);
+router.patch("/me/password", async (req, res) => {
+  const result = await applyPasswordChange(req.user, req.body);
   if (result.error) return fail(res, result.status, result.error);
   res.status(204).end();
 });
 
-router.patch("/me", (req, res) => {
-  const result = applyMePatch(req.user, req.body);
+router.patch("/me", async (req, res) => {
+  const result = await applyMePatch(req.user, req.body);
   if (result.error) return fail(res, result.status, result.error);
   res.json({ user: toPublicUser(result.user) });
 });
 
-router.delete("/me", (req, res) => {
-  const result = applySelfDelete(req.user);
+router.delete("/me", async (req, res) => {
+  const result = await applySelfDelete(req.user);
   if (result.error) return fail(res, result.status, result.error);
-  writeUserRemovalAudit(req.user, result, "Deleted their own account.");
+  await writeUserRemovalAudit(req.user, result, "Deleted their own account.");
   res.status(204).end();
 });
 
@@ -48,10 +48,10 @@ router.get("/", (req, res) => {
 
 // Super admin only. The SYSTEM_BAN request must already be approved;
 // approval itself does not delete the account (same pattern as GROUP_DELETE).
-router.delete("/:id", requireSuperAdmin, (req, res) => {
-  const result = applyUserDelete(req.params.id, req.body?.requestId);
+router.delete("/:id", requireSuperAdmin, async (req, res) => {
+  const result = await applyUserDelete(req.params.id, req.body?.requestId);
   if (result.error) return fail(res, result.status, result.error);
-  writeUserRemovalAudit(
+  await writeUserRemovalAudit(
     req.user,
     result,
     `Deletion requested by ${result.tombstone.requestedBy}.`,
@@ -59,15 +59,15 @@ router.delete("/:id", requireSuperAdmin, (req, res) => {
   res.status(204).end();
 });
 
-function writeUserRemovalAudit(actor, result, detail) {
-  writeAudit(
+async function writeUserRemovalAudit(actor, result, detail) {
+  await writeAudit(
     actor,
     "USER_DELETED",
     `User: ${result.user.firstName} ${result.user.lastName} (${result.user.email})`,
     detail,
   );
   for (const title of result.emptiedGroups ?? []) {
-    writeAudit(
+    await writeAudit(
       actor,
       "GROUP_DELETED",
       `Group: ${title}`,
@@ -75,7 +75,7 @@ function writeUserRemovalAudit(actor, result, detail) {
     );
   }
   for (const row of result.appointed ?? []) {
-    writeAudit(
+    await writeAudit(
       actor,
       "GROUP_ADMIN_APPOINTED",
       `User: ${row.name}`,
