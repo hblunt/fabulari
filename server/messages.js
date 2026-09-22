@@ -39,6 +39,17 @@ async function persistMessage(room, author, { type, content }) {
   return { message };
 }
 
+async function deleteOwnMessage(roomId, messageId, userId) {
+  const message = db.messages.find((m) => m.id === messageId && m.roomId === roomId);
+  if (!message) return { status: 404, error: "Message not found." };
+  if (message.authorId !== userId) {
+    return { status: 403, error: "You can only delete your own messages." };
+  }
+  db.messages = db.messages.filter((m) => m.id !== messageId);
+  await save("messages");
+  return { ok: true };
+}
+
 async function deleteMessagesForRoom(roomId) {
   const next = db.messages.filter((m) => m.roomId !== roomId);
   if (next.length === db.messages.length) return;
@@ -46,4 +57,4 @@ async function deleteMessagesForRoom(roomId) {
   await save("messages");
 }
 
-module.exports = { lastFive, persistMessage, deleteMessagesForRoom };
+module.exports = { lastFive, persistMessage, deleteOwnMessage, deleteMessagesForRoom };

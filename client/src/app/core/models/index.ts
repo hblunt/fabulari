@@ -11,3 +11,4 @@ export * from './app-request';
 export * from './banned-account';
 export * from './audit-entry';
 export * from './session-user';
+export * from './presence';

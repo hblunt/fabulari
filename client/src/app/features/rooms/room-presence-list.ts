@@ -1,11 +1,10 @@
 // client/src/app/features/rooms/room-presence-list.ts
-// Who is in this room (wf-07), not the group's full roster. Mock data in
-// Phase 1 — sockets will drive this list later.
+// Who is in this room (wf-07), not the group's full roster.
 
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { HlmAvatar, HlmAvatarFallback } from '@spartan-ng/helm/avatar';
 import { CountBadge } from '../../shared/count-badge';
-import type { PresencePerson } from './mock-messages';
+import type { PresencePerson } from '../../core/models';
 
 @Component({
   selector: 'app-room-presence-list',

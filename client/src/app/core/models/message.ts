@@ -1,7 +1,7 @@
 // client/src/app/core/models/message.ts
-// Chat message (Phase1.md §4 "Message"). Author name and picture are
+// Chat message (Phase2.md §4 "Message"). Author name and picture are
 // snapshotted at send time so old messages still render after the author is
-// deleted. Phase 1 renders mock messages only; sockets arrive in Phase 2.
+// deleted.
 
 import type { MessageType } from './types';
 

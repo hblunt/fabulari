@@ -12,11 +12,26 @@ const { fail } = require("./errors");
 
 // Runs on every request. Attaches req.user when the header names a real user;
 // leaves it undefined otherwise so public routes (login, register) still work.
+function userFromId(userId) {
+  if (!userId) return undefined;
+  return db.users.find((u) => u.id === userId);
+}
+
 function identifyUser(req, res, next) {
-  const userId = req.header("X-User-Id");
-  if (userId) {
-    req.user = db.users.find((u) => u.id === userId);
+  req.user = userFromId(req.header("X-User-Id"));
+  next();
+}
+
+// Same identity as REST. Browsers cannot set X-User-Id on the websocket
+// upgrade, so the client also sends `auth.userId` (Phase2.md §6).
+function identifySocket(socket, next) {
+  const userId = socket.handshake.auth?.userId || socket.handshake.headers["x-user-id"];
+  const user = userFromId(userId);
+  if (!user) return next(new Error("Not signed in."));
+  if (user.role === "SUPER_ADMIN") {
+    return next(new Error("The super admin has no chat."));
   }
+  socket.data.user = user;
   next();
 }
 
@@ -78,6 +93,7 @@ function requireGroupMember(paramName) {
 
 module.exports = {
   identifyUser,
+  identifySocket,
   requireAuth,
   requireSuperAdmin,
   requireGroupAdmin,
