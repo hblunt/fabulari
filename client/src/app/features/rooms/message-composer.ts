@@ -1,15 +1,14 @@
 // client/src/app/features/rooms/message-composer.ts
-// Text plus optional image attach. Limits are stated here; image send waits
-// for the upload route (Stage 3).
+// Text plus an image attachment. The file is checked here, uploaded over
+// HTTP, then sent as an IMAGE socket message.
 
-import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmInput } from '@spartan-ng/helm/input';
+import { imageFileError } from '../../core/services/picture';
 import { NotificationService } from '../../core/services/notification-service';
-
-const MAX_BYTES = 2 * 1024 * 1024;
-const ALLOWED = ['image/png', 'image/jpeg', 'image/gif'];
+import { RoomService } from '../../core/services/room-service';
 
 export interface ComposerSend {
   type: 'TEXT' | 'IMAGE';
@@ -39,7 +38,7 @@ export interface ComposerSend {
           accept="image/png,image/jpeg,image/gif"
           (change)="onFile($event)"
         />
-        <button hlmBtn variant="outline" type="button" (click)="fileInput.click()">+</button>
+        <button hlmBtn variant="outline" type="button" [disabled]="isUploading()" (click)="fileInput.click()">+</button>
         <button hlmBtn type="submit" [disabled]="!draft().trim()">Send</button>
       </div>
       <p class="text-xs text-muted-foreground">PNG, JPEG or GIF · 2MB maximum</p>
@@ -48,10 +47,13 @@ export interface ComposerSend {
 })
 export class MessageComposer {
   private readonly notify = inject(NotificationService);
+  private readonly rooms = inject(RoomService);
 
+  readonly roomId = input.required<string>();
   readonly sent = output<ComposerSend>();
 
   protected readonly draft = signal('');
+  protected readonly isUploading = signal(false);
 
   protected sendText(): void {
     const content = this.draft().trim();
@@ -65,14 +67,21 @@ export class MessageComposer {
     const file = input.files?.[0];
     input.value = '';
     if (!file) return;
-    if (!ALLOWED.includes(file.type)) {
-      this.notify.error('Images must be PNG, JPEG or GIF.');
+    const problem = imageFileError(file);
+    if (problem) {
+      this.notify.error(problem);
       return;
     }
-    if (file.size > MAX_BYTES) {
-      this.notify.error('Images must be 2MB or smaller.');
-      return;
-    }
-    this.notify.info('Image messages will be available once upload is wired.');
+    this.isUploading.set(true);
+    this.rooms.uploadImage(this.roomId(), file).subscribe({
+      next: (filename) => {
+        this.isUploading.set(false);
+        this.sent.emit({ type: 'IMAGE', content: filename });
+      },
+      error: (err) => {
+        this.isUploading.set(false);
+        this.notify.error(err.error?.error ?? 'Could not upload that image.');
+      },
+    });
   }
 }

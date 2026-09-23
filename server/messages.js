@@ -6,6 +6,7 @@
 
 const { db, save } = require("./storage");
 const { newId } = require("./ids");
+const { isStoredImage, removeUpload } = require("./uploads");
 
 const MESSAGE_TYPES = ["TEXT", "IMAGE"];
 
@@ -23,6 +24,10 @@ async function persistMessage(room, author, { type, content }) {
   if (typeof content !== "string" || !content.trim()) {
     return { status: 400, error: "Message content is required." };
   }
+  const body = content.trim();
+  if (type === "IMAGE" && !isStoredImage(body)) {
+    return { status: 400, error: "Upload the image before sending it." };
+  }
 
   const message = {
     id: newId("message"),
@@ -31,7 +36,7 @@ async function persistMessage(room, author, { type, content }) {
     authorName: `${author.firstName} ${author.lastName}`,
     authorPicture: author.profilePicture ?? null,
     type,
-    content: content.trim(),
+    content: body,
     timestamp: new Date().toISOString(),
   };
   db.messages.push(message);
@@ -45,15 +50,19 @@ async function deleteOwnMessage(roomId, messageId, userId) {
   if (message.authorId !== userId) {
     return { status: 403, error: "You can only delete your own messages." };
   }
+  if (message.type === "IMAGE") removeUpload(message.content);
   db.messages = db.messages.filter((m) => m.id !== messageId);
   await save("messages");
   return { ok: true };
 }
 
 async function deleteMessagesForRoom(roomId) {
-  const next = db.messages.filter((m) => m.roomId !== roomId);
-  if (next.length === db.messages.length) return;
-  db.messages = next;
+  const gone = db.messages.filter((m) => m.roomId === roomId);
+  if (gone.length === 0) return;
+  for (const message of gone) {
+    if (message.type === "IMAGE") removeUpload(message.content);
+  }
+  db.messages = db.messages.filter((m) => m.roomId !== roomId);
   await save("messages");
 }
 

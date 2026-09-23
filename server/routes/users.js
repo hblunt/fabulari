@@ -1,12 +1,14 @@
 // server/routes/users.js
 // User directory, own profile, self-delete, and hard-delete (Phase2.md §6
 // "Users"). /me is registered before /:id so "me" is never treated as a user
-// id. POST /me/picture is still later in Phase 2.
+// id.
 
 const express = require("express");
+const { save } = require("../storage");
 const { fail } = require("../errors");
 const { requireAuth, requireSuperAdmin } = require("../middleware");
 const { writeAudit } = require("../audit");
+const { imageUpload, saveUpload, removeUpload } = require("../uploads");
 const { listVisibleUsers, applyUserDelete, applySelfDelete, applyMePatch, applyPasswordChange, toPublicUser } = require("../users");
 
 const router = express.Router();
@@ -27,6 +29,23 @@ router.patch("/me", async (req, res) => {
   const result = await applyMePatch(req.user, req.body);
   if (result.error) return fail(res, result.status, result.error);
   res.json({ user: toPublicUser(result.user) });
+});
+
+router.post("/me/picture", (req, res) => {
+  imageUpload(req, res, async () => {
+    const filename = saveUpload(req.file);
+    if (req.user.profilePicture) removeUpload(req.user.profilePicture);
+    req.user.profilePicture = filename;
+    await save("users");
+    res.json({ profilePicture: filename });
+  });
+});
+
+router.delete("/me/picture", async (req, res) => {
+  if (req.user.profilePicture) removeUpload(req.user.profilePicture);
+  req.user.profilePicture = null;
+  await save("users");
+  res.json({ profilePicture: null });
 });
 
 router.delete("/me", async (req, res) => {

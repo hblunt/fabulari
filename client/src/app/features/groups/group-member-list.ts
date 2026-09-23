@@ -4,7 +4,7 @@
 
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { take } from 'rxjs';
-import { HlmAvatar, HlmAvatarFallback } from '@spartan-ng/helm/avatar';
+import { AvatarFace } from '../../shared/avatar-face';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmDialogService } from '@spartan-ng/helm/dialog';
 import type { Group, User } from '../../core/models';
@@ -18,7 +18,7 @@ import { CountBadge } from '../../shared/count-badge';
 
 @Component({
   selector: 'app-group-member-list',
-  imports: [HlmAvatar, HlmAvatarFallback, HlmButton, CountBadge],
+  imports: [AvatarFace, HlmButton, CountBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex items-center gap-2">
@@ -29,9 +29,12 @@ import { CountBadge } from '../../shared/count-badge';
     <ul class="mt-3 divide-y rounded-xl border">
       @for (member of sorted(); track member.id) {
         <li class="flex items-center gap-3 px-3 py-2 text-sm">
-          <hlm-avatar size="sm">
-            <span hlmAvatarFallback>{{ initials(member) }}</span>
-          </hlm-avatar>
+          <app-avatar-face
+            size="sm"
+            [filename]="member.profilePicture"
+            [initials]="initials(member)"
+            [alt]="member.firstName + ' ' + member.lastName"
+          />
           <span class="min-w-0 flex-1">
             {{ member.firstName }} {{ member.lastName }}
             @if (member.id === currentUserId()) {

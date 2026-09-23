@@ -7,4 +7,5 @@ export interface PresencePerson {
   firstName: string;
   lastName: string;
   isAdmin: boolean;
+  profilePicture: string | null;
 }

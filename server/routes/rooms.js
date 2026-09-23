@@ -9,6 +9,7 @@ const { fail } = require("../errors");
 const { requireAuth } = require("../middleware");
 const { applyRoomPatch, deleteRoom } = require("../rooms");
 const { lastFive } = require("../messages");
+const { imageUpload, saveUpload } = require("../uploads");
 
 const router = express.Router();
 
@@ -29,6 +30,17 @@ function loadRoom(req, res) {
   req.group = group;
   return room;
 }
+
+router.post("/:id/images", (req, res) => {
+  if (!loadRoom(req, res)) return;
+  if (!req.group.members.includes(req.user.id)) {
+    return fail(res, 403, "Members of this group only.");
+  }
+  imageUpload(req, res, () => {
+    const filename = saveUpload(req.file);
+    res.status(201).json({ filename });
+  });
+});
 
 router.get("/:id/messages", (req, res) => {
   if (!loadRoom(req, res)) return;
