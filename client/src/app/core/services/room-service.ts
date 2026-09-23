@@ -23,6 +23,14 @@ export class RoomService {
       .pipe(map((res) => res.messages));
   }
 
+  uploadImage(roomId: string, file: File): Observable<string> {
+    const body = new FormData();
+    body.append('image', file);
+    return this.http
+      .post<{ filename: string }>(`/api/rooms/${roomId}/images`, body)
+      .pipe(map((res) => res.filename));
+  }
+
   create(groupId: string, body: { name: string; description?: string }): Observable<Room> {
     return this.http
       .post<{ room: Room }>(`/api/groups/${groupId}/rooms`, body)

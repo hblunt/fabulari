@@ -1,7 +1,7 @@
 // client/src/app/features/profile/profile-page.ts
-// Own account (wf-11). Email is read-only. Picture upload is shown disabled.
-// Date of birth is editable; age is calculated on the server. Users (not the
-// super admin) can delete their own account from here.
+// Own account (wf-11). Email is read-only. Picture upload stores a filename
+// and shows it here and in chat. Date of birth is editable; age is calculated
+// on the server. Users (not the super admin) can delete their own account.
 
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -38,7 +38,12 @@ function todayLocalIso(): string {
       @if (user(); as user) {
         <div class="mt-6 grid items-start gap-6 md:grid-cols-2">
           <div class="flex flex-col gap-6">
-            <app-profile-picture-upload [initials]="initials(user)" />
+            <app-profile-picture-upload
+              [initials]="initials(user)"
+              [filename]="user.profilePicture"
+              (picked)="onPicture($event)"
+              (removed)="onRemovePicture()"
+            />
             <app-change-password-form />
           </div>
 
@@ -122,6 +127,20 @@ export class ProfilePage {
     return `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
   }
 
+  protected onPicture(file: File): void {
+    this.users.uploadPicture(file).subscribe({
+      next: (filename) => this.applyPicture(filename, 'Picture updated.'),
+      error: (err) => this.notify.error(err.error?.error ?? 'Could not upload that image.'),
+    });
+  }
+
+  protected onRemovePicture(): void {
+    this.users.removePicture().subscribe({
+      next: () => this.applyPicture(null, 'Picture removed.'),
+      error: (err) => this.notify.error(err.error?.error ?? 'Could not remove your picture.'),
+    });
+  }
+
   protected save(): void {
     if (this.form.invalid || this.isSaving()) return;
     this.isSaving.set(true);
@@ -165,6 +184,15 @@ export class ProfilePage {
         },
       });
     });
+  }
+
+  private applyPicture(filename: string | null, notice: string): void {
+    const current = this.user();
+    if (!current) return;
+    const next = { ...current, profilePicture: filename };
+    this.user.set(next);
+    this.auth.applyUser(next);
+    this.notify.success(notice);
   }
 
   private show(user: User): void {

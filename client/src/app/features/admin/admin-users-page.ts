@@ -5,7 +5,7 @@
 
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { forkJoin, map, of, switchMap, take } from 'rxjs';
-import { HlmAvatar, HlmAvatarFallback } from '@spartan-ng/helm/avatar';
+import { AvatarFace } from '../../shared/avatar-face';
 import { HlmBadge } from '@spartan-ng/helm/badge';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmDialogService } from '@spartan-ng/helm/dialog';
@@ -19,7 +19,7 @@ import { ConfirmDialog, type ConfirmDialogContext } from '../requests/confirm-di
 
 @Component({
   selector: 'app-admin-users-page',
-  imports: [HlmAvatar, HlmAvatarFallback, HlmBadge, HlmButton, HlmInput],
+  imports: [AvatarFace, HlmBadge, HlmButton, HlmInput],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="mx-auto max-w-6xl px-4 py-8">
@@ -40,9 +40,12 @@ import { ConfirmDialog, type ConfirmDialogContext } from '../requests/confirm-di
       <ul class="mt-4 divide-y rounded-xl border">
         @for (user of visible(); track user.id) {
           <li class="flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
-            <hlm-avatar size="sm">
-              <span hlmAvatarFallback>{{ initials(user) }}</span>
-            </hlm-avatar>
+            <app-avatar-face
+              size="sm"
+              [filename]="user.profilePicture"
+              [initials]="initials(user)"
+              [alt]="user.firstName + ' ' + user.lastName"
+            />
             <span class="w-56 shrink-0 font-medium">{{ user.firstName }} {{ user.lastName }}</span>
             <span class="min-w-44 text-muted-foreground">{{ user.email }}</span>
             <span class="w-10 text-muted-foreground">{{ user.age }}</span>

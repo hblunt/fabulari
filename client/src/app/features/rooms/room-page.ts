@@ -95,7 +95,7 @@ import { RoomPresenceList } from './room-presence-list';
               />
             </div>
             <div class="border-t px-4 py-3">
-              <app-message-composer (sent)="onSend($event)" />
+              <app-message-composer [roomId]="roomId()" (sent)="onSend($event)" />
             </div>
           </div>
 
@@ -188,8 +188,7 @@ export class RoomPage {
   }
 
   protected onSend(payload: ComposerSend): void {
-    if (payload.type !== 'TEXT') return;
-    this.sockets.send(this.roomId(), 'TEXT', payload.content);
+    this.sockets.send(this.roomId(), payload.type, payload.content);
   }
 
   protected removeMessage(id: string): void {

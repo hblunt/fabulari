@@ -2,6 +2,7 @@
 // Express entry point. Mongo is the source of truth: connect, load collections
 // into memory, then listen. A missing database is a hard start failure.
 
+const path = require("path");
 const http = require("http");
 const express = require("express");
 const cors = require("cors");
@@ -9,6 +10,7 @@ const { load } = require("./storage");
 const { connect, isConnected } = require("./mongo");
 const { identifyUser } = require("./middleware");
 const { attachSockets } = require("./sockets");
+const { UPLOAD_DIR } = require("./uploads");
 const bootstrapRouter = require("./routes/bootstrap");
 const authRouter = require("./routes/auth");
 const requestsRouter = require("./routes/requests");
@@ -30,6 +32,10 @@ app.use(
 );
 
 app.use(express.json());
+
+// Uploaded pictures. Filenames are random, and the Angular proxy already
+// forwards /api, so images load as /api/uploads/<filename>.
+app.use("/api/uploads", express.static(UPLOAD_DIR, { index: false, dotfiles: "ignore" }));
 
 // Resolve the X-User-Id header to a user record on every request (§6).
 app.use(identifyUser);

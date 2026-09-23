@@ -881,12 +881,14 @@ Login returns the session user.
 | PATCH | `/api/users/me` | Any of `{ firstName, lastName, dateOfBirth }` | `{ user }` | Authenticated caller |
 | PATCH | `/api/users/me/password` | `{ currentPassword, newPassword }` | `204` | Authenticated caller |
 | POST | `/api/users/me/picture` | `multipart/form-data`, image field | `{ profilePicture }` | Authenticated caller |
+| DELETE | `/api/users/me/picture` | — | `{ profilePicture: null }` | Authenticated caller |
 | GET | `/api/users` | Optional `?groupId=` | `{ users: [...] }` | Super admin, or group admin for their own group |
 | DELETE | `/api/users/me` | — | `204` | Authenticated caller, not the super admin |
 | DELETE | `/api/users/:id` | `{ requestId }` | `204` | Super admin |
 
 `PATCH` rejects email and rejects `age` (age is calculated from date of birth).
-Picture upload is later in Phase 2. `DELETE /me` removes the caller's account
+Picture upload accepts PNG, JPEG or GIF up to 2MB and stores only the filename.
+`DELETE /me/picture` clears it. `DELETE /me` removes the caller's account
 without blacklisting the email. `DELETE /:id` needs an approved `SYSTEM_BAN`;
 writes the tombstone and strips the user from every group. An empty group is
 deleted; a sole admin with remaining members is succeeded.

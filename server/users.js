@@ -8,6 +8,7 @@ const { db, save } = require("./storage");
 const { newId } = require("./ids");
 const { deleteGroupCascade } = require("./requests");
 const { ageFromDob, validateDateOfBirth } = require("./age");
+const { removeUpload } = require("./uploads");
 
 // 10 rounds is the bcrypt default cost: slow enough to resist brute force,
 // fast enough not to make login sluggish.
@@ -138,6 +139,7 @@ function requesterLabel(userId) {
 // and clear pending requests they submitted or were named in.
 async function removeUserFromSystem(user, keepRequestId) {
   const userId = user.id;
+  if (user.profilePicture) removeUpload(user.profilePicture);
   const appointed = [];
   for (const group of db.groups) {
     const soleAdmin = group.admins.includes(userId) && group.admins.length === 1;

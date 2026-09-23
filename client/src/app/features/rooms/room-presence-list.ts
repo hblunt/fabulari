@@ -2,13 +2,13 @@
 // Who is in this room (wf-07), not the group's full roster.
 
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { HlmAvatar, HlmAvatarFallback } from '@spartan-ng/helm/avatar';
+import { AvatarFace } from '../../shared/avatar-face';
 import { CountBadge } from '../../shared/count-badge';
 import type { PresencePerson } from '../../core/models';
 
 @Component({
   selector: 'app-room-presence-list',
-  imports: [HlmAvatar, HlmAvatarFallback, CountBadge],
+  imports: [AvatarFace, CountBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex h-full min-h-0 flex-1 flex-col overflow-y-auto' },
   template: `
@@ -19,9 +19,12 @@ import type { PresencePerson } from '../../core/models';
     <ul class="mt-3 flex flex-col gap-2">
       @for (person of sorted(); track person.id) {
         <li class="flex items-center gap-2 text-sm">
-          <hlm-avatar size="sm">
-            <span hlmAvatarFallback>{{ person.firstName.charAt(0) }}{{ person.lastName.charAt(0) }}</span>
-          </hlm-avatar>
+          <app-avatar-face
+            size="sm"
+            [filename]="person.profilePicture"
+            [initials]="person.firstName.charAt(0) + person.lastName.charAt(0)"
+            [alt]="person.firstName + ' ' + person.lastName"
+          />
           <span class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
             {{ person.firstName }} {{ person.lastName }}
             @if (person.id === currentUserId()) {

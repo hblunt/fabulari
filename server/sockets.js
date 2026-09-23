@@ -40,6 +40,7 @@ function occupants(roomId, group) {
       firstName: u.firstName,
       lastName: u.lastName,
       isAdmin: group.admins.includes(u.id),
+      profilePicture: u.profilePicture ?? null,
     }));
 }
 
@@ -105,9 +106,6 @@ function attachSockets(httpServer) {
       if (!socket.rooms.has(roomId)) return reply(ack, { error: "Join the room before sending." });
       const ctx = findRoomContext(roomId, user);
       if (ctx.error) return reply(ack, { error: ctx.error });
-      if (payload?.type !== "TEXT") {
-        return reply(ack, { error: "Text only for now." });
-      }
 
       const result = await persistMessage(ctx.room, user, payload);
       if (result.error) return reply(ack, { error: result.error });
